@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ChatBubble from '@/components/ChatBubble';
+import TypingIndicator from '@/components/TypingIndicator';
 import { sendMessage } from '@/services/agriBot';
 import { ChatMessage } from '@/types';
 import { ArrowLeft, Send, Mic } from 'lucide-react';
@@ -18,7 +19,6 @@ const AgriBot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Update welcome message when language changes
   useEffect(() => {
     setMessages([{ id: '1', role: 'bot', content: t('bot.welcome'), timestamp: new Date() }]);
   }, [language, t]);
@@ -27,7 +27,7 @@ const AgriBot = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const quickQuestions = [t('bot.q1'), t('bot.q2'), t('bot.q3'), t('bot.q4')];
+  const quickQuestions = [t('bot.q1'), t('bot.q2'), t('bot.q3'), t('bot.q4'), t('bot.q5')];
 
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
@@ -53,16 +53,23 @@ const AgriBot = () => {
   const showQuickQuestions = messages.length <= 1;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-screen flex flex-col bg-background grain-bg">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-screen flex flex-col" style={{ background: '#0a1f0a' }}>
       {/* Header */}
-      <div className="flex-shrink-0 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between z-40">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+      <div
+        className="flex-shrink-0 px-4 py-3 flex items-center justify-between z-40"
+        style={{
+          background: 'rgba(10,31,10,0.8)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 transition-colors" style={{ color: 'rgba(232,245,232,0.6)' }}>
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center">
-          <h1 className="font-heading font-bold text-lg text-foreground">{t('bot.title')}</h1>
+          <h1 className="font-heading font-bold text-lg" style={{ color: '#e8f5e8' }}>{t('bot.title')}</h1>
           {isTyping && (
-            <span className="text-xs text-accent font-body">{t('bot.typing')}</span>
+            <span className="text-xs font-body" style={{ color: '#c8a84b' }}>{t('bot.typing')}</span>
           )}
         </div>
         <LanguageSwitcher />
@@ -73,24 +80,7 @@ const AgriBot = () => {
         {messages.map((msg, i) => (
           <ChatBubble key={msg.id} message={msg} index={i} />
         ))}
-
-        {/* Typing indicator */}
-        {isTyping && (
-          <div className="flex items-center gap-2 pl-10">
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="w-2 h-2 bg-accent rounded-full"
-                  style={{
-                    animation: `bounce-dot 1.4s infinite ease-in-out both`,
-                    animationDelay: `${i * 0.16}s`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        {isTyping && <TypingIndicator />}
       </div>
 
       {/* Quick questions */}
@@ -101,7 +91,12 @@ const AgriBot = () => {
               <button
                 key={q}
                 onClick={() => handleSend(q)}
-                className="px-3 py-1.5 rounded-full text-xs font-body bg-card border border-border text-muted-foreground hover:text-foreground hover:border-accent/50 transition-all"
+                className="px-3 py-1.5 rounded-full text-xs font-body transition-all"
+                style={{
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(200,168,75,0.3)',
+                  color: 'rgba(232,245,232,0.7)',
+                }}
               >
                 {q}
               </button>
@@ -111,9 +106,16 @@ const AgriBot = () => {
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t border-border bg-background/80 backdrop-blur-md px-4 py-3">
+      <div
+        className="flex-shrink-0 px-4 py-3"
+        style={{
+          background: 'rgba(10,31,10,0.8)',
+          backdropFilter: 'blur(12px)',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
         <div className="flex items-center gap-2 max-w-2xl mx-auto">
-          <button className="text-muted-foreground hover:text-foreground transition-colors p-2">
+          <button className="p-2 transition-colors" style={{ color: 'rgba(232,245,232,0.5)' }}>
             <Mic className="w-5 h-5" />
           </button>
           <input
@@ -122,13 +124,24 @@ const AgriBot = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={t('bot.placeholder')}
-            className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
+            className="flex-1 rounded-full px-4 py-2.5 text-sm font-body focus:outline-none transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#e8f5e8',
+            }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = '#c8a84b'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
           />
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => handleSend()}
-            className="p-2.5 rounded-full bg-accent text-accent-foreground transition-all hover:glow-gold"
+            className="p-2.5 rounded-full transition-all"
+            style={{
+              background: '#c8a84b',
+              color: '#0a1f0a',
+            }}
           >
             <Send className="w-4 h-4" />
           </motion.button>

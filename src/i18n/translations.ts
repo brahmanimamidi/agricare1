@@ -4,12 +4,14 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Landing
     'landing.subtitle': 'Smart Farming, Better Future',
+    'landing.getAdvice': 'Get Advice →',
+    'landing.hideAdvice': 'Hide ↑',
     'landing.cropAdvisory': 'Crop Advisory',
-    'landing.cropAdvisoryDesc': 'Get personalized crop recommendations based on your soil, climate, and region.',
+    'landing.cropAdvisoryDesc': 'Get personalized crop recommendations based on your soil NPK values, season and region.',
     'landing.diseaseDetection': 'Crop Disease Detection',
-    'landing.diseaseDetectionDesc': 'Identify crop diseases from symptoms and get treatment recommendations.',
-    'landing.agribot': 'AgriBot - Farm Assistant',
-    'landing.agribotDesc': 'Chat with our AI-powered farming assistant for instant agricultural advice.',
+    'landing.diseaseDetectionDesc': 'Identify crop diseases from symptoms and get medicine, fertilizer and precaution advisory.',
+    'landing.agribot': 'AgriBot Farm Assistant',
+    'landing.agribotDesc': 'Chat with our AI farming assistant in English, Hindi or Telugu for instant farming guidance.',
     'landing.explore': 'Explore',
 
     // Common
@@ -18,6 +20,7 @@ const translations: Record<Language, Record<string, string>> = {
     'common.loading': 'Loading...',
     'common.noResults': 'No results yet. Fill the form and submit.',
     'common.reset': 'Reset',
+    'common.skip': 'Skip →',
 
     // Crop Advisory
     'crop.title': 'Crop Advisory',
@@ -61,7 +64,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Disease Detection
     'disease.title': 'Crop Disease Detection',
-    'disease.selectCrop': 'Select Crop',
+    'disease.selectCrop': 'Select Your Crop',
     'disease.selectSymptoms': 'Select Symptoms',
     'disease.detect': 'Detect Disease',
     'disease.checkAnother': 'Check Another Crop',
@@ -77,6 +80,19 @@ const translations: Record<Language, Record<string, string>> = {
     'disease.high': 'High',
     'disease.noResults': 'Select a crop and symptoms to detect diseases.',
 
+    // Symptoms
+    'symptom.yellowLeaves': 'Yellow Leaves',
+    'symptom.brownSpots': 'Brown Spots',
+    'symptom.wilting': 'Wilting',
+    'symptom.stunted': 'Stunted Growth',
+    'symptom.whiteCoating': 'White Powder',
+    'symptom.holesInLeaves': 'Holes in Leaves',
+    'symptom.rootRot': 'Root Rot',
+    'symptom.leafCurl': 'Leaf Curl',
+    'symptom.blackSpots': 'Black Spots',
+    'symptom.driedTips': 'Dried Tips',
+    'symptom.fruitRot': 'Fruit Rot',
+
     // Crops
     'cropName.rice': 'Rice',
     'cropName.wheat': 'Wheat',
@@ -84,16 +100,6 @@ const translations: Record<Language, Record<string, string>> = {
     'cropName.tomato': 'Tomato',
     'cropName.potato': 'Potato',
     'cropName.maize': 'Maize',
-
-    // Symptoms
-    'symptom.yellowLeaves': 'Yellow leaves',
-    'symptom.brownSpots': 'Brown spots',
-    'symptom.wilting': 'Wilting',
-    'symptom.stunted': 'Stunted growth',
-    'symptom.whiteCoating': 'White coating on leaves',
-    'symptom.rootRot': 'Root rot',
-    'symptom.leafCurl': 'Leaf curling',
-    'symptom.fruitRot': 'Fruit rot',
 
     // AgriBot
     'bot.title': 'AgriBot 🌾',
@@ -105,15 +111,18 @@ const translations: Record<Language, Record<string, string>> = {
     'bot.q2': 'How to treat yellow leaves?',
     'bot.q3': 'Fertilizer for wheat?',
     'bot.q4': 'Pest control for rice?',
+    'bot.q5': 'Best season for tomatoes?',
   },
   hi: {
     'landing.subtitle': 'स्मार्ट खेती, बेहतर भविष्य',
+    'landing.getAdvice': 'सलाह लें →',
+    'landing.hideAdvice': 'छिपाएं ↑',
     'landing.cropAdvisory': 'फसल सलाह',
-    'landing.cropAdvisoryDesc': 'अपनी मिट्टी, जलवायु और क्षेत्र के आधार पर व्यक्तिगत फसल सिफारिशें प्राप्त करें।',
+    'landing.cropAdvisoryDesc': 'अपनी मिट्टी NPK मान, मौसम और क्षेत्र के आधार पर व्यक्तिगत फसल सिफारिशें प्राप्त करें।',
     'landing.diseaseDetection': 'फसल रोग पहचान',
-    'landing.diseaseDetectionDesc': 'लक्षणों से फसल रोगों की पहचान करें और उपचार की सिफारिशें प्राप्त करें।',
-    'landing.agribot': 'एग्रीबॉट - कृषि सहायक',
-    'landing.agribotDesc': 'तत्काल कृषि सलाह के लिए हमारे AI-संचालित कृषि सहायक से चैट करें।',
+    'landing.diseaseDetectionDesc': 'लक्षणों से फसल रोगों की पहचान करें और दवा, उर्वरक और सावधानी सलाह प्राप्त करें।',
+    'landing.agribot': 'एग्रीबॉट कृषि सहायक',
+    'landing.agribotDesc': 'तत्काल कृषि मार्गदर्शन के लिए हमारे AI कृषि सहायक से अंग्रेजी, हिंदी या तेलुगु में चैट करें।',
     'landing.explore': 'खोजें',
 
     'common.back': 'वापस',
@@ -121,6 +130,7 @@ const translations: Record<Language, Record<string, string>> = {
     'common.loading': 'लोड हो रहा है...',
     'common.noResults': 'अभी तक कोई परिणाम नहीं। फॉर्म भरें और सबमिट करें।',
     'common.reset': 'रीसेट',
+    'common.skip': 'छोड़ें →',
 
     'crop.title': 'फसल सलाह',
     'crop.soilType': 'मिट्टी का प्रकार',
@@ -159,7 +169,7 @@ const translations: Record<Language, Record<string, string>> = {
     'state.mp': 'मध्य प्रदेश',
 
     'disease.title': 'फसल रोग पहचान',
-    'disease.selectCrop': 'फसल चुनें',
+    'disease.selectCrop': 'अपनी फसल चुनें',
     'disease.selectSymptoms': 'लक्षण चुनें',
     'disease.detect': 'रोग पहचानें',
     'disease.checkAnother': 'अन्य फसल जाँचें',
@@ -175,6 +185,18 @@ const translations: Record<Language, Record<string, string>> = {
     'disease.high': 'उच्च',
     'disease.noResults': 'रोग पहचानने के लिए फसल और लक्षण चुनें।',
 
+    'symptom.yellowLeaves': 'पीली पत्तियाँ',
+    'symptom.brownSpots': 'भूरे धब्बे',
+    'symptom.wilting': 'मुरझाना',
+    'symptom.stunted': 'अवरुद्ध विकास',
+    'symptom.whiteCoating': 'सफेद पाउडर',
+    'symptom.holesInLeaves': 'पत्तियों में छेद',
+    'symptom.rootRot': 'जड़ सड़न',
+    'symptom.leafCurl': 'पत्ती मुड़ना',
+    'symptom.blackSpots': 'काले धब्बे',
+    'symptom.driedTips': 'सूखी नोकें',
+    'symptom.fruitRot': 'फल सड़न',
+
     'cropName.rice': 'चावल',
     'cropName.wheat': 'गेहूं',
     'cropName.cotton': 'कपास',
@@ -182,33 +204,27 @@ const translations: Record<Language, Record<string, string>> = {
     'cropName.potato': 'आलू',
     'cropName.maize': 'मक्का',
 
-    'symptom.yellowLeaves': 'पीली पत्तियाँ',
-    'symptom.brownSpots': 'भूरे धब्बे',
-    'symptom.wilting': 'मुरझाना',
-    'symptom.stunted': 'अवरुद्ध विकास',
-    'symptom.whiteCoating': 'पत्तियों पर सफेद परत',
-    'symptom.rootRot': 'जड़ सड़न',
-    'symptom.leafCurl': 'पत्ती मुड़ना',
-    'symptom.fruitRot': 'फल सड़न',
-
     'bot.title': 'एग्रीबॉट 🌾',
     'bot.typing': 'एग्रीबॉट टाइप कर रहा है...',
     'bot.placeholder': 'खेती के बारे में पूछें...',
     'bot.send': 'भेजें',
     'bot.welcome': 'नमस्ते! मैं एग्रीबॉट हूं, आपका कृषि सहायक। फसलों, मिट्टी, कीटों, या खेती की तकनीकों के बारे में कुछ भी पूछें!',
-    'bot.q1': 'काली मिट्टी के लिए सबसे अच्छी फसल?',
+    'bot.q1': 'काली मिट्टी के लिए फसल?',
     'bot.q2': 'पीली पत्तियों का इलाज?',
     'bot.q3': 'गेहूं के लिए खाद?',
     'bot.q4': 'चावल में कीट नियंत्रण?',
+    'bot.q5': 'टमाटर के लिए मौसम?',
   },
   te: {
     'landing.subtitle': 'స్మార్ట్ వ్యవసాయం, మెరుగైన భవిష్యత్తు',
+    'landing.getAdvice': 'సలహా పొందండి →',
+    'landing.hideAdvice': 'దాచు ↑',
     'landing.cropAdvisory': 'పంట సలహా',
-    'landing.cropAdvisoryDesc': 'మీ నేల, వాతావరణం మరియు ప్రాంతం ఆధారంగా వ్యక్తిగత పంట సిఫార్సులు పొందండి.',
+    'landing.cropAdvisoryDesc': 'మీ నేల NPK విలువలు, సీజన్ మరియు ప్రాంతం ఆధారంగా వ్యక్తిగత పంట సిఫార్సులు పొందండి.',
     'landing.diseaseDetection': 'పంట వ్యాధి గుర్తింపు',
-    'landing.diseaseDetectionDesc': 'లక్షణాల నుండి పంట వ్యాధులను గుర్తించి చికిత్స సిఫార్సులు పొందండి.',
-    'landing.agribot': 'ఆగ్రిబాట్ - వ్యవసాయ సహాయకుడు',
-    'landing.agribotDesc': 'తక్షణ వ్యవసాయ సలహా కోసం మా AI-ఆధారిత వ్యవసాయ సహాయకునితో చాట్ చేయండి.',
+    'landing.diseaseDetectionDesc': 'లక్షణాల నుండి పంట వ్యాధులను గుర్తించి మందు, ఎరువు మరియు జాగ్రత్త సలహా పొందండి.',
+    'landing.agribot': 'ఆగ్రిబాట్ వ్యవసాయ సహాయకుడు',
+    'landing.agribotDesc': 'తక్షణ వ్యవసాయ మార్గదర్శకత్వం కోసం మా AI వ్యవసాయ సహాయకునితో ఇంగ్లీష్, హిందీ లేదా తెలుగులో చాట్ చేయండి.',
     'landing.explore': 'అన్వేషించండి',
 
     'common.back': 'వెనుకకు',
@@ -216,6 +232,7 @@ const translations: Record<Language, Record<string, string>> = {
     'common.loading': 'లోడ్ అవుతోంది...',
     'common.noResults': 'ఇంకా ఫలితాలు లేవు. ఫారమ్ నింపి సబ్మిట్ చేయండి.',
     'common.reset': 'రీసెట్',
+    'common.skip': 'దాటవేయి →',
 
     'crop.title': 'పంట సలహా',
     'crop.soilType': 'నేల రకం',
@@ -254,7 +271,7 @@ const translations: Record<Language, Record<string, string>> = {
     'state.mp': 'మధ్య ప్రదేశ్',
 
     'disease.title': 'పంట వ్యాధి గుర్తింపు',
-    'disease.selectCrop': 'పంటను ఎంచుకోండి',
+    'disease.selectCrop': 'మీ పంటను ఎంచుకోండి',
     'disease.selectSymptoms': 'లక్షణాలను ఎంచుకోండి',
     'disease.detect': 'వ్యాధిని గుర్తించండి',
     'disease.checkAnother': 'మరొక పంట తనిఖీ చేయండి',
@@ -270,6 +287,18 @@ const translations: Record<Language, Record<string, string>> = {
     'disease.high': 'ఎక్కువ',
     'disease.noResults': 'వ్యాధులను గుర్తించడానికి పంట మరియు లక్షణాలను ఎంచుకోండి.',
 
+    'symptom.yellowLeaves': 'పసుపు ఆకులు',
+    'symptom.brownSpots': 'గోధుమ మచ్చలు',
+    'symptom.wilting': 'వాడిపోవడం',
+    'symptom.stunted': 'ఎదుగుదల ఆగడం',
+    'symptom.whiteCoating': 'తెల్ల పొడి',
+    'symptom.holesInLeaves': 'ఆకులలో రంధ్రాలు',
+    'symptom.rootRot': 'వేరు కుళ్ళు',
+    'symptom.leafCurl': 'ఆకు ముడుచుకోవడం',
+    'symptom.blackSpots': 'నల్ల మచ్చలు',
+    'symptom.driedTips': 'ఎండిన చివరలు',
+    'symptom.fruitRot': 'పండు కుళ్ళు',
+
     'cropName.rice': 'వరి',
     'cropName.wheat': 'గోధుమ',
     'cropName.cotton': 'పత్తి',
@@ -277,24 +306,16 @@ const translations: Record<Language, Record<string, string>> = {
     'cropName.potato': 'బంగాళాదుంప',
     'cropName.maize': 'మొక్కజొన్న',
 
-    'symptom.yellowLeaves': 'పసుపు ఆకులు',
-    'symptom.brownSpots': 'గోధుమ మచ్చలు',
-    'symptom.wilting': 'వాడిపోవడం',
-    'symptom.stunted': 'ఎదుగుదల ఆగడం',
-    'symptom.whiteCoating': 'ఆకులపై తెల్ల పొర',
-    'symptom.rootRot': 'వేరు కుళ్ళు',
-    'symptom.leafCurl': 'ఆకు ముడుచుకోవడం',
-    'symptom.fruitRot': 'పండు కుళ్ళు',
-
     'bot.title': 'ఆగ్రిబాట్ 🌾',
     'bot.typing': 'ఆగ్రిబాట్ టైప్ చేస్తోంది...',
     'bot.placeholder': 'వ్యవసాయం గురించి అడగండి...',
     'bot.send': 'పంపండి',
     'bot.welcome': 'నమస్కారం! నేను ఆగ్రిబాట్, మీ వ్యవసాయ సహాయకుడిని. పంటలు, నేల, చీడపీడలు లేదా వ్యవసాయ పద్ధతుల గురించి ఏదైనా అడగండి!',
-    'bot.q1': 'నల్ల మట్టికి మంచి పంట?',
+    'bot.q1': 'నల్ల మట్టికి పంట?',
     'bot.q2': 'పసుపు ఆకులకు చికిత్స?',
     'bot.q3': 'గోధుమకు ఎరువు?',
     'bot.q4': 'వరిలో చీడ నివారణ?',
+    'bot.q5': 'టమాటాకు సీజన్?',
   },
 };
 

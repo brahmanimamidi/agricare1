@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { ChatMessage } from '@/types';
-import { Leaf } from 'lucide-react';
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -18,16 +17,29 @@ const ChatBubble = ({ message, index }: ChatBubbleProps) => {
       className={`flex gap-2 ${isBot ? 'justify-start' : 'justify-end'}`}
     >
       {isBot && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center mt-1">
-          <Leaf className="w-4 h-4 text-primary-foreground" />
+        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 text-sm"
+          style={{ background: 'rgba(45,106,45,0.3)' }}
+        >
+          🌿
         </div>
       )}
       <div
-        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+        className="max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+        style={
           isBot
-            ? 'bg-card text-card-foreground rounded-tl-sm'
-            : 'bg-accent text-accent-foreground rounded-tr-sm'
-        }`}
+            ? {
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#e8f5e8',
+                borderTopLeftRadius: '4px',
+              }
+            : {
+                background: 'rgba(200,168,75,0.25)',
+                border: '1px solid rgba(200,168,75,0.4)',
+                color: '#e8f5e8',
+                borderTopRightRadius: '4px',
+              }
+        }
       >
         {message.content}
       </div>

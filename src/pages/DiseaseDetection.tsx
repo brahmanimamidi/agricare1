@@ -1,196 +1,324 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import ResultCard from '@/components/ResultCard';
-import LoadingSkeleton from '@/components/LoadingSkeleton';
+import FallingLeaves from '@/components/FallingLeaves';
+import UploadZone from '@/components/disease/UploadZone';
+import CropSelector from '@/components/disease/CropSelector';
+import SymptomChips from '@/components/disease/SymptomChips';
+import ScanningOverlay from '@/components/disease/ScanningOverlay';
+import ResultHeroCard from '@/components/disease/ResultHeroCard';
+import GeminiPanel from '@/components/disease/GeminiPanel';
 import { detectDisease } from '@/services/diseaseDetection';
-import { DiseaseDetectionResult, SeverityLevel } from '@/types';
-import { ArrowLeft, Search, RotateCcw } from 'lucide-react';
-
-const crops = ['rice', 'wheat', 'cotton', 'tomato', 'potato', 'maize'] as const;
-const symptoms = ['yellowLeaves', 'brownSpots', 'wilting', 'stunted', 'whiteCoating', 'holesInLeaves', 'rootRot', 'leafCurl', 'blackSpots', 'driedTips'] as const;
-
-const severityBadge: Record<SeverityLevel, { bg: string; color: string }> = {
-  low: { bg: 'rgba(45,106,45,0.3)', color: '#4ade80' },
-  medium: { bg: 'rgba(200,168,75,0.3)', color: '#c8a84b' },
-  high: { bg: 'rgba(239,68,68,0.3)', color: '#ef4444' },
-};
+import { DiseaseDetectionResult } from '@/types';
+import { ArrowLeft, Search, Microscope } from 'lucide-react';
 
 const DiseaseDetection = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+
+  // Typewriter state
+  const [titleText, setTitleText] = useState('');
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const [showUnderline, setShowUnderline] = useState(false);
+  const fullTitle = t('disease.title');
+
+  useEffect(() => {
+    let i = 0;
+    setTitleText('');
+    setShowSubtitle(false);
+    setShowUnderline(false);
+    const interval = setInterval(() => {
+      i++;
+      setTitleText(fullTitle.slice(0, i));
+      if (i >= fullTitle.length) {
+        clearInterval(interval);
+        setTimeout(() => setShowUnderline(true), 200);
+        setTimeout(() => setShowSubtitle(true), 500);
+      }
+    }, 60);
+    return () => clearInterval(interval);
+  }, [fullTitle]);
+
+  // Tab state
+  const [tab, setTab] = useState<'upload' | 'symptoms'>('upload');
+
+  // Upload tab state
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Shared state
   const [crop, setCrop] = useState('');
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [additionalDetails, setAdditionalDetails] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiseaseDetectionResult | null>(null);
+  const [showResult, setShowResult] = useState(false);
 
   const toggleSymptom = (s: string) => {
     setSelectedSymptoms((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   };
 
-  const handleDetect = async () => {
+  const canAnalyse = tab === 'upload' ? !!(image && crop) : !!(crop && selectedSymptoms.length > 0);
+
+  const handleAnalyse = useCallback(async () => {
+    if (!canAnalyse) return;
     setLoading(true);
     setResult(null);
-    const res = await detectDisease({ crop, symptoms: selectedSymptoms });
+    setShowResult(false);
+    const res = await detectDisease({ crop, symptoms: selectedSymptoms, image, additionalDetails });
     setResult(res);
     setLoading(false);
-  };
+    setTimeout(() => setShowResult(true), 300);
+  }, [canAnalyse, crop, selectedSymptoms, image, additionalDetails]);
 
-  const handleReset = () => {
-    setCrop('');
-    setSelectedSymptoms([]);
-    setResult(null);
-  };
-
-  const glassInput = "w-full font-body text-sm focus:outline-none transition-all px-3 py-2.5 rounded-[10px]";
-  const glassStyle = {
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    color: '#e8f5e8',
-  };
+  // Particle system
+  const particles = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: 1 + Math.random() * 2,
+    duration: 8 + Math.random() * 12,
+    delay: Math.random() * 5,
+  }));
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen" style={{ background: '#0a1f0a' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen relative overflow-hidden" style={{ background: '#0a1f0a' }}>
+      {/* Background layers */}
+      <div className="absolute inset-0" style={{ zIndex: 0 }}>
+        <div className="absolute inset-0" style={{
+          background: 'radial-gradient(ellipse at 20% 50%, rgba(45,106,45,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(200,168,75,0.06) 0%, transparent 50%)',
+        }} />
+      </div>
+
+      {/* Grain */}
+      <div className="absolute inset-0 grain-bg" style={{ zIndex: 1, opacity: 0.06 }} />
+
+      {/* Particle system */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+        {particles.map((p) => (
+          <motion.div
+            key={p.id}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`,
+              width: p.size, height: p.size,
+              background: 'rgba(232,245,232,0.3)',
+            }}
+            animate={{
+              y: [-20, 20, -20],
+              x: [-10, 10, -10],
+              opacity: [0.2, 0.6, 0.2],
+            }}
+            transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        ))}
+      </div>
+
+      {/* Glow orbs */}
+      <motion.div className="absolute rounded-full" style={{ top: '5%', left: '5%', width: 300, height: 300, background: 'rgba(45,106,45,0.2)', filter: 'blur(80px)', zIndex: 1 }}
+        animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 5, repeat: Infinity }} />
+      <motion.div className="absolute rounded-full" style={{ bottom: '10%', right: '5%', width: 250, height: 250, background: 'rgba(200,168,75,0.15)', filter: 'blur(60px)', zIndex: 1 }}
+        animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 6, repeat: Infinity }} />
+
+      {/* Falling leaves */}
+      <FallingLeaves intensity="light" />
+
       {/* Header */}
-      <div
-        className="sticky top-0 z-40 px-4 py-3 flex items-center justify-between"
-        style={{
-          background: 'rgba(10,31,10,0.8)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 transition-colors" style={{ color: 'rgba(232,245,232,0.6)' }}>
+      <div className="relative sticky top-0 z-40 px-4 py-3 flex items-center justify-between"
+        style={{ background: 'rgba(10,31,10,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={() => navigate('/features')} className="flex items-center gap-2 transition-colors" style={{ color: '#c8a84b' }}>
           <ArrowLeft className="w-5 h-5" /> <span className="font-body text-sm">{t('common.back')}</span>
         </button>
-        <h1 className="font-heading font-bold text-lg" style={{ color: '#e8f5e8' }}>{t('disease.title')}</h1>
         <LanguageSwitcher />
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* Form card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-[20px] p-6 space-y-5"
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(200,168,75,0.2)',
-          }}
-        >
-          {/* Step 1: Crop */}
-          <div>
-            <label className="block text-xs font-body mb-1" style={{ color: 'rgba(232,245,232,0.6)' }}>{t('disease.selectCrop')}</label>
-            <select
-              className={glassInput}
-              style={glassStyle}
-              value={crop}
-              onChange={(e) => { setCrop(e.target.value); setSelectedSymptoms([]); setResult(null); }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#c8a84b'; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+      <div className="relative max-w-2xl mx-auto px-4 py-8 space-y-8" style={{ zIndex: 10 }}>
+        {/* SECTION 1: Title with typewriter */}
+        <div className="text-center space-y-2">
+          <h1 className="font-heading font-bold text-3xl sm:text-4xl relative inline-block" style={{ color: '#e8f5e8' }}>
+            {titleText}
+            <motion.span
+              animate={{ opacity: [1, 0] }}
+              transition={{ duration: 0.5, repeat: Infinity }}
+              style={{ color: '#c8a84b' }}
             >
-              <option value="">—</option>
-              {crops.map((c) => <option key={c} value={c}>{t(`cropName.${c}`)}</option>)}
-            </select>
-          </div>
-
-          {/* Step 2: Symptoms */}
-          {crop && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <label className="block text-xs font-body mb-2" style={{ color: 'rgba(232,245,232,0.6)' }}>{t('disease.selectSymptoms')}</label>
-              <div className="flex flex-wrap gap-2">
-                {symptoms.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => toggleSymptom(s)}
-                    className="px-3 py-1.5 rounded-full text-xs font-body transition-all"
-                    style={
-                      selectedSymptoms.includes(s)
-                        ? { background: 'rgba(200,168,75,0.2)', border: '1px solid #c8a84b', color: '#c8a84b' }
-                        : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(232,245,232,0.6)' }
-                    }
-                  >
-                    {t(`symptom.${s}`)}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+              |
+            </motion.span>
+          </h1>
+          {showUnderline && (
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.6 }}
+              className="mx-auto"
+              style={{ width: 200, height: 2, background: '#c8a84b', transformOrigin: 'left', boxShadow: '0 0 12px rgba(200,168,75,0.4)' }}
+            />
           )}
+          <AnimatePresence>
+            {showSubtitle && (
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-body text-sm mx-auto max-w-md"
+                style={{ color: 'rgba(232,245,232,0.6)' }}
+              >
+                Upload a leaf photo or describe symptoms — our AI will diagnose instantly
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
 
-          {/* Step 3: Detect */}
-          {crop && selectedSymptoms.length > 0 && (
-            <motion.button
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={handleDetect}
-              disabled={loading}
-              className="w-full py-3 rounded-full font-body font-semibold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1.5px solid rgba(200,168,75,0.5)',
-                backdropFilter: 'blur(12px)',
-                color: '#c8a84b',
-              }}
-            >
-              <Search className="w-4 h-4" />
-              {loading ? t('common.loading') : t('disease.detect')}
-            </motion.button>
-          )}
-        </motion.div>
-
-        {/* Results */}
-        {loading && <LoadingSkeleton count={4} />}
-
-        {!loading && result && (
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            <ResultCard title={t('disease.name')} value={<span style={{ color: '#c8a84b', fontSize: '1.1rem', fontWeight: 600 }}>{result.diseaseName}</span>} index={0} />
-            <ResultCard
-              title={t('disease.severity')}
-              value={
-                <span
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-                  style={severityBadge[result.severity]}
+        {/* Show form or result */}
+        <AnimatePresence mode="wait">
+          {!showResult ? (
+            <motion.div key="form" exit={{ opacity: 0, y: -40 }} transition={{ duration: 0.4 }} className="space-y-6">
+              {/* SECTION 2: Tab selector */}
+              <div className="relative flex rounded-full overflow-hidden mx-auto max-w-md"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                {/* Sliding indicator */}
+                <motion.div
+                  className="absolute top-0 bottom-0 rounded-full"
+                  style={{ width: '50%', background: 'rgba(255,255,255,0.08)', borderBottom: '2px solid #c8a84b' }}
+                  animate={{ x: tab === 'upload' ? '0%' : '100%' }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                />
+                <button
+                  onClick={() => setTab('upload')}
+                  className="relative z-10 flex-1 py-3 text-sm font-body font-medium transition-colors"
+                  style={{ color: tab === 'upload' ? '#c8a84b' : 'rgba(232,245,232,0.4)' }}
                 >
-                  {t(`disease.${result.severity}`)}
-                </span>
-              }
-              index={1}
-            />
-            <ResultCard title={t('disease.description')} value={result.description} index={2} />
-            <ResultCard title={t('disease.medicine')} value={result.recommendedMedicine} index={3} />
-            <ResultCard title={t('disease.fertilizerAdvisory')} value={result.fertilizerAdvisory} index={4} />
-            <ResultCard
-              title={t('disease.precautions')}
-              value={<ul className="space-y-1">{result.precautions.map((p, i) => <li key={i}>⚠️ {p}</li>)}</ul>}
-              index={5}
-            />
-            <ResultCard
-              title={t('disease.organic')}
-              value={<ul className="list-disc list-inside space-y-1">{result.organicAlternatives.map((a, i) => <li key={i}>{a}</li>)}</ul>}
-              index={6}
-            />
+                  📸 Upload Photo
+                </button>
+                <button
+                  onClick={() => setTab('symptoms')}
+                  className="relative z-10 flex-1 py-3 text-sm font-body font-medium transition-colors"
+                  style={{ color: tab === 'symptoms' ? '#c8a84b' : 'rgba(232,245,232,0.4)' }}
+                >
+                  📝 Describe Symptoms
+                </button>
+              </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={handleReset}
-              className="w-full py-3 rounded-full font-body font-semibold text-sm transition-all flex items-center justify-center gap-2"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(232,245,232,0.7)',
-              }}
-            >
-              <RotateCcw className="w-4 h-4" /> {t('disease.checkAnother')}
-            </motion.button>
-          </motion.div>
-        )}
+              {/* Tab content */}
+              <motion.div
+                className="rounded-[20px] p-6 space-y-6 relative overflow-hidden"
+                style={{
+                  background: 'rgba(255,255,255,0.07)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(200,168,75,0.2)',
+                  minHeight: 300,
+                }}
+              >
+                <ScanningOverlay visible={loading} imagePreview={imagePreview} mode={tab === 'upload' ? 'photo' : 'symptoms'} />
 
-        {!loading && !result && (
-          <p className="text-center text-sm font-body py-12" style={{ color: 'rgba(232,245,232,0.5)' }}>{t('disease.noResults')}</p>
-        )}
+                <AnimatePresence mode="wait">
+                  {tab === 'upload' ? (
+                    <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
+                      <UploadZone image={image} preview={imagePreview} onImageSelect={(f, p) => { setImage(f); setImagePreview(p); }} />
+                      <CropSelector selected={crop} onSelect={setCrop} label={t('disease.selectCrop')} />
+                    </motion.div>
+                  ) : (
+                    <motion.div key="symptoms" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                      <CropSelector selected={crop} onSelect={setCrop} label={t('disease.selectCrop')} />
+                      {crop && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                          <SymptomChips selected={selectedSymptoms} onToggle={toggleSymptom} label={t('disease.selectSymptoms')} />
+                        </motion.div>
+                      )}
+                      {crop && selectedSymptoms.length > 0 && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                          <label className="block text-xs font-body mb-1" style={{ color: 'rgba(232,245,232,0.6)' }}>
+                            Any other details? (optional)
+                          </label>
+                          <textarea
+                            value={additionalDetails}
+                            onChange={(e) => setAdditionalDetails(e.target.value.slice(0, 200))}
+                            placeholder="e.g. Noticed 3 days ago, spreading fast..."
+                            rows={3}
+                            className="w-full px-4 py-3 rounded-xl text-sm font-body focus:outline-none resize-none"
+                            style={{
+                              background: 'rgba(255,255,255,0.04)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              color: '#e8f5e8',
+                            }}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = '#c8a84b'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                          />
+                          <p className="text-right text-xs font-body mt-1" style={{ color: 'rgba(232,245,232,0.3)' }}>
+                            {additionalDetails.length}/200
+                          </p>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Analyse / Detect button */}
+              <AnimatePresence>
+                {canAnalyse && !loading && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAnalyse}
+                    className="w-full py-4 rounded-full font-body font-semibold text-base flex items-center justify-center gap-2 relative overflow-hidden"
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1.5px solid rgba(200,168,75,0.5)',
+                      backdropFilter: 'blur(12px)',
+                      color: '#c8a84b',
+                      height: 56,
+                    }}
+                  >
+                    {/* Shimmer */}
+                    <motion.div
+                      className="absolute inset-0"
+                      style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(200,168,75,0.15) 50%, transparent 60%)' }}
+                      animate={{ x: ['-100%', '200%'] }}
+                      transition={{ duration: 2.5, repeat: Infinity }}
+                    />
+                    <span className="relative z-10 flex items-center gap-2">
+                      {tab === 'upload' ? <><Microscope className="w-5 h-5" /> 🔬 Analyse Leaf</> : <><Search className="w-5 h-5" /> 🧬 Detect Disease</>}
+                    </span>
+                  </motion.button>
+                )}
+                {canAnalyse && loading && (
+                  <div className="flex justify-center">
+                    <motion.div
+                      className="w-12 h-12 rounded-full border-2"
+                      style={{ borderColor: '#c8a84b', borderTopColor: 'transparent' }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    />
+                  </div>
+                )}
+                {!canAnalyse && !loading && (
+                  <div className="w-full py-4 rounded-full font-body text-sm text-center" style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(232,245,232,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    {tab === 'upload' ? 'Select image & crop to continue' : 'Select crop & symptoms to continue'}
+                  </div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            /* RESULT SECTION */
+            result && (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="space-y-6"
+              >
+                <ResultHeroCard result={result} imagePreview={imagePreview} crop={crop} />
+                <GeminiPanel result={result} />
+              </motion.div>
+            )
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

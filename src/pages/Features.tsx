@@ -185,9 +185,9 @@ const FeatureCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.3 + index * 0.2, type: 'spring', stiffness: 70 }}
       onClick={() => navigate(card.path)}
-      className="cursor-pointer w-[320px] sm:w-[340px] relative overflow-hidden group"
+      className="cursor-pointer w-[320px] sm:w-[340px] relative overflow-hidden group flex flex-col"
       style={{
-        height: 420,
+        minHeight: 420,
         background: 'rgba(255,255,255,0.06)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',

@@ -23,6 +23,8 @@ export interface CropAdvisoryResult {
 export interface DiseaseDetectionInput {
   crop: string;
   symptoms: string[];
+  image?: File | null;
+  additionalDetails?: string;
 }
 
 export type SeverityLevel = 'low' | 'medium' | 'high';
@@ -30,11 +32,16 @@ export type SeverityLevel = 'low' | 'medium' | 'high';
 export interface DiseaseDetectionResult {
   diseaseName: string;
   severity: SeverityLevel;
+  confidence: number;
   description: string;
+  diseaseType: string;
+  urgency: string;
+  region: string;
   recommendedMedicine: string;
   fertilizerAdvisory: string;
   precautions: string[];
   organicAlternatives: string[];
+  additionalTips: string;
 }
 
 export interface ChatMessage {

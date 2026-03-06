@@ -10,12 +10,12 @@ import SymptomChips from '@/components/disease/SymptomChips';
 import ScanningOverlay from '@/components/disease/ScanningOverlay';
 import ResultHeroCard from '@/components/disease/ResultHeroCard';
 import GeminiPanel from '@/components/disease/GeminiPanel';
-import { detectDisease } from '@/services/diseaseDetection';
+import { detectDiseaseFromImage, getDiseaseAdvisory, detectDiseaseFromSymptoms } from '@/services/diseaseDetection';
 import { DiseaseDetectionResult } from '@/types';
 import { ArrowLeft, Search, Microscope } from 'lucide-react';
 
 const DiseaseDetection = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   // Typewriter state
@@ -64,14 +64,88 @@ const DiseaseDetection = () => {
 
   const handleAnalyse = useCallback(async () => {
     if (!canAnalyse) return;
+
+    // Check if model URL is properly configured ONLY for upload tab
+    if (tab === 'upload') {
+      const tmUrl = import.meta.env.VITE_TEACHABLE_MACHINE_URL;
+      if (!tmUrl || tmUrl === 'add_after_training') {
+        alert('Image detection coming soon! Use the Describe Symptoms tab for instant results.');
+        return;
+      }
+    }
+
     setLoading(true);
     setResult(null);
     setShowResult(false);
-    const res = await detectDisease({ crop, symptoms: selectedSymptoms, image, additionalDetails });
-    setResult(res);
+    try {
+      if (tab === 'upload' && image) {
+        const detection = await detectDiseaseFromImage(image);
+        const initialResult: any = {
+          diseaseName: detection.diseaseName,
+          severity: detection.severity,
+          confidence: detection.confidence,
+          description: '',
+          diseaseType: detection.isHealthy ? 'Healthy' : 'Disease Detected',
+          urgency: detection.isHealthy ? 'None' : 'Act Soon',
+          region: 'Local Field',
+          recommendedMedicine: '',
+          fertilizerAdvisory: '',
+          precautions: [],
+          organicAlternatives: [],
+          additionalTips: '',
+        };
+        setResult(initialResult);
+      } else if (tab === 'symptoms' && crop && selectedSymptoms.length > 0) {
+        const res = await detectDiseaseFromSymptoms({
+          crop,
+          symptoms: selectedSymptoms,
+          additionalDetails,
+          language: language as 'en' | 'hi' | 'te'
+        });
+
+        const initialResult: any = {
+          diseaseName: res.diseaseName,
+          severity: res.severity,
+          confidence: res.confidence,
+          description: res.description,
+          diseaseType: 'Disease Detected',
+          urgency: res.severity === 'high' ? 'Immediate Action' : 'Monitor closely',
+          region: 'Local Field',
+          recommendedMedicine: res.treatment,
+          fertilizerAdvisory: res.fertilizerAdvisory,
+          precautions: res.precautions,
+          organicAlternatives: [res.organicAlternatives],
+          additionalTips: res.additionalTips,
+        };
+        setResult(initialResult);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to analyze symptoms. Please try again.');
+    }
     setLoading(false);
     setTimeout(() => setShowResult(true), 300);
-  }, [canAnalyse, crop, selectedSymptoms, image, additionalDetails]);
+  }, [canAnalyse, crop, image, tab, selectedSymptoms, additionalDetails, language]);
+
+  const handleAdvisoryClick = async () => {
+    if (!result || (result as any).recommendedMedicine) return;
+    try {
+      const advisory = await getDiseaseAdvisory(result.diseaseName, crop, language as 'en' | 'hi' | 'te');
+      setResult((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          recommendedMedicine: advisory.treatment,
+          fertilizerAdvisory: advisory.fertilizerAdvisory,
+          precautions: advisory.precautions,
+          organicAlternatives: [advisory.organicAlternatives],
+          additionalTips: advisory.additionalTips,
+        };
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Particle system
   const particles = Array.from({ length: 40 }, (_, i) => ({
@@ -314,7 +388,15 @@ const DiseaseDetection = () => {
                 className="space-y-6"
               >
                 <ResultHeroCard result={result} imagePreview={imagePreview} crop={crop} />
-                <GeminiPanel result={result} />
+                <div onClickCapture={(e) => {
+                  const target = e.target as HTMLElement;
+                  const btn = target.closest('button');
+                  if (btn && btn.textContent?.includes('Get Full Treatment Plan')) {
+                    handleAdvisoryClick();
+                  }
+                }}>
+                  <GeminiPanel result={result} crop={crop} />
+                </div>
               </motion.div>
             )
           )}

@@ -84,7 +84,7 @@ const Features = () => {
       ))}
 
       {/* Falling leaves */}
-      <FallingLeaves count={30} />
+      <FallingLeaves intensity="normal" />
 
       {/* Header */}
       <div className="relative px-6 pt-6 flex items-center justify-between" style={{ zIndex: 10 }}>

@@ -45,13 +45,13 @@ const UploadZone = ({ image, preview, onImageSelect }: UploadZoneProps) => {
         border: dragging
           ? '2px dashed #c8a84b'
           : preview
-          ? '2px solid rgba(200,168,75,0.6)'
-          : '2px dashed rgba(200,168,75,0.4)',
+            ? '2px solid rgba(200,168,75,0.6)'
+            : '2px dashed rgba(200,168,75,0.4)',
         background: dragging
           ? 'rgba(200,168,75,0.08)'
           : preview
-          ? 'transparent'
-          : 'rgba(255,255,255,0.04)',
+            ? 'transparent'
+            : 'rgba(255,255,255,0.04)',
         overflow: 'hidden',
         ...(preview ? { boxShadow: '0 0 30px rgba(200,168,75,0.2)' } : {}),
       }}
@@ -82,19 +82,20 @@ const UploadZone = ({ image, preview, onImageSelect }: UploadZoneProps) => {
           </motion.div>
         ) : (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center h-full gap-3">
+            className="flex flex-col items-center justify-center h-full gap-3 px-4">
             <motion.span
-              className="text-6xl"
+              className="text-6xl mb-2"
               animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.05, 1] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              🍃
+              🚧
             </motion.span>
-            <p className="font-heading text-lg" style={{ color: '#e8f5e8' }}>
-              {dragging ? 'Release to upload' : 'Drop your leaf photo here'}
+            <p className="font-heading text-lg text-center" style={{ color: '#e8f5e8' }}>
+              Image-based detection coming soon!
             </p>
-            <p className="font-body text-sm" style={{ color: '#c8a84b' }}>or tap to browse</p>
-            <p className="font-body text-xs" style={{ color: 'rgba(232,245,232,0.3)' }}>Supports: JPG, PNG, WEBP</p>
+            <p className="font-body text-sm text-center" style={{ color: '#c8a84b' }}>
+              Use the Describe Symptoms tab for instant results.
+            </p>
           </motion.div>
         )}
       </AnimatePresence>

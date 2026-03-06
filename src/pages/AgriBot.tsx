@@ -30,24 +30,52 @@ const AgriBot = () => {
   const quickQuestions = [t('bot.q1'), t('bot.q2'), t('bot.q3'), t('bot.q4'), t('bot.q5')];
 
   const handleSend = async (text?: string) => {
-    const msg = text || input.trim();
-    if (!msg) return;
+    const inputMessage = text || input;
+    if (!inputMessage.trim()) return
 
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: msg, timestamp: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setIsTyping(true);
+    const userMessage = inputMessage.trim()
+    setInput('')
 
-    const res = await sendMessage({ message: msg, language, chatHistory: [...messages, userMsg] });
+    // Add user message to chat
+    const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user' as const, content: userMessage, timestamp: new Date() }
+    const updatedHistory = [...messages, userMsg]
+    setMessages(updatedHistory)
 
-    const botMsg: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: 'bot',
-      content: res.reply || '...',
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, botMsg]);
-    setIsTyping(false);
+    // Show typing indicator
+    setIsTyping(true)
+
+    try {
+      const response = await sendMessage(
+        userMessage,
+        language as 'en' | 'hi' | 'te',
+        updatedHistory
+      )
+
+      // Add bot response to chat
+      const botMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'bot' as const,
+        content: response.reply,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, botMsg])
+
+    } catch (error) {
+      console.error('AgriBot error:', error)
+      const errorMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'bot' as const,
+        content: language === 'hi'
+          ? 'क्षमा करें, कनेक्शन में समस्या है। कृपया दोबारा कोशिश करें।'
+          : language === 'te'
+            ? 'క్షమించండి, కనెక్షన్ సమస్య ఉంది. దయచేసి మళ్ళీ ప్రయత్నించండి.'
+            : 'Sorry, connection failed. Please try again.',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMsg])
+    } finally {
+      setIsTyping(false)
+    }
   };
 
   const showQuickQuestions = messages.length <= 1;

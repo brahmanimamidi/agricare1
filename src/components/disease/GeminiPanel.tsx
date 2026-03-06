@@ -6,11 +6,12 @@ import FollowUpChat from './FollowUpChat';
 
 interface GeminiPanelProps {
   result: DiseaseDetectionResult;
+  crop: string;
 }
 
 const shimmerGradient = 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%)';
 
-const GeminiPanel = ({ result }: GeminiPanelProps) => {
+const GeminiPanel = ({ result, crop }: GeminiPanelProps) => {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -159,7 +160,7 @@ const GeminiPanel = ({ result }: GeminiPanelProps) => {
                 ))}
 
                 {/* Follow-up chat */}
-                <FollowUpChat diseaseName={result.diseaseName} />
+                <FollowUpChat diseaseName={result.diseaseName} cropName={crop} />
 
                 {/* Bottom actions */}
                 <div className="flex gap-3 pt-4">

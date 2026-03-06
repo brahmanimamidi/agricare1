@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send } from 'lucide-react';
+import { askDiseaseFollowUp } from '@/services/diseaseDetection';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Message {
   role: 'user' | 'bot';
@@ -9,9 +11,11 @@ interface Message {
 
 interface FollowUpChatProps {
   diseaseName: string;
+  cropName: string;
 }
 
-const FollowUpChat = ({ diseaseName }: FollowUpChatProps) => {
+const FollowUpChat = ({ diseaseName, cropName }: FollowUpChatProps) => {
+  const { language } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,16 +27,26 @@ const FollowUpChat = ({ diseaseName }: FollowUpChatProps) => {
     setMessages((p) => [...p, { role: 'user', text: userMsg }]);
     setLoading(true);
 
-    // Mock AI response
-    await new Promise((r) => setTimeout(r, 1500));
-    setMessages((p) => [
-      ...p,
-      {
-        role: 'bot',
-        text: `Regarding ${diseaseName}: ${userMsg.length > 30 ? 'Based on your detailed question, I recommend consulting a local agricultural extension officer for field-specific advice. Meanwhile, ensure proper field hygiene and follow the prescribed treatment plan consistently.' : 'Good question! The treatment plan above should address this concern. Apply preventive measures during early growth stages for best results. Monitor the crop every 3-5 days for changes.'}`,
-      },
-    ]);
-    setLoading(false);
+    try {
+      const responseText = await askDiseaseFollowUp(
+        userMsg,
+        diseaseName,
+        cropName,
+        language as 'en' | 'hi' | 'te'
+      );
+      setMessages((p) => [
+        ...p,
+        { role: 'bot', text: responseText },
+      ]);
+    } catch (e) {
+      console.error(e);
+      setMessages((p) => [
+        ...p,
+        { role: 'bot', text: 'Sorry, I encountered an error. Please try again.' },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

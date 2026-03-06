@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AnimatePresence } from "framer-motion";
 import Landing from "./pages/Landing";
+import Features from "./pages/Features";
 import CropAdvisory from "./pages/CropAdvisory";
 import DiseaseDetection from "./pages/DiseaseDetection";
 import AgriBot from "./pages/AgriBot";
@@ -23,6 +24,7 @@ const App = () => (
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/features" element={<Features />} />
               <Route path="/crop-advisory" element={<CropAdvisory />} />
               <Route path="/disease-detection" element={<DiseaseDetection />} />
               <Route path="/agribot" element={<AgriBot />} />

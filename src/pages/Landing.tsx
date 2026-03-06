@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import FeatureCard from '@/components/FeatureCard';
 import { ChevronDown } from 'lucide-react';
 
 // Particle system
@@ -70,15 +70,9 @@ const Particles = () => {
 
 const VIDEO_SRC = 'https://res.cloudinary.com/dav7cqgvw/video/upload/v1772636779/Farmer_walking_in_paddy_fields_delpmaspu__x0pag7.mp4';
 
-const featureCards = [
-  { key: 'cropAdvisory', icon: '🌱', path: '/crop-advisory' },
-  { key: 'diseaseDetection', icon: '🐛', path: '/disease-detection' },
-  { key: 'agribot', icon: '💬', path: '/agribot' },
-];
-
 const Landing = () => {
   const { t } = useLanguage();
-  const [showCards, setShowCards] = useState(false);
+  const navigate = useNavigate();
   const [videoFailed, setVideoFailed] = useState(false);
 
   // Staggered letter animation for "AgriCare"
@@ -109,11 +103,11 @@ const Landing = () => {
 
       {/* Dark overlay */}
       <div
-        className="absolute inset-0 transition-opacity duration-700"
+        className="absolute inset-0"
         style={{
           zIndex: 1,
           backgroundColor: '#0a1f0a',
-          opacity: showCards ? 0.72 : 0.55,
+          opacity: 0.55,
         }}
       />
 
@@ -181,7 +175,7 @@ const Landing = () => {
           transition={{ delay: 1.6, duration: 0.6 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setShowCards(!showCards)}
+          onClick={() => navigate('/features')}
           className="mt-8 font-body font-medium transition-all duration-300"
           style={{
             background: 'rgba(255,255,255,0.08)',
@@ -205,31 +199,8 @@ const Landing = () => {
             e.currentTarget.style.boxShadow = 'none';
           }}
         >
-          {showCards ? t('landing.hideAdvice') : t('landing.getAdvice')}
+          {t('landing.getAdvice')}
         </motion.button>
-
-        {/* Feature Cards */}
-        <AnimatePresence>
-          {showCards && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="mt-12 flex flex-col md:flex-row items-center gap-6"
-            >
-              {featureCards.map((card, i) => (
-                <FeatureCard
-                  key={card.key}
-                  icon={card.icon}
-                  title={t(`landing.${card.key}`)}
-                  description={t(`landing.${card.key}Desc`)}
-                  path={card.path}
-                  index={i}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </section>
     </div>
   );

@@ -82,19 +82,18 @@ const UploadZone = ({ image, preview, onImageSelect }: UploadZoneProps) => {
           </motion.div>
         ) : (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center h-full gap-3 px-4">
-            <motion.span
-              className="text-6xl mb-2"
-              animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.05, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              🚧
-            </motion.span>
-            <p className="font-heading text-lg text-center" style={{ color: '#e8f5e8' }}>
-              Image-based detection coming soon!
+            className="flex flex-col items-center justify-center h-full gap-3 px-4 text-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2"
+              style={{ background: 'rgba(200,168,75,0.1)' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M17 8L12 3M12 3L7 8M12 3V15" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <p className="font-heading text-lg" style={{ color: '#e8f5e8' }}>
+              Drag & drop leaf photo here
             </p>
-            <p className="font-body text-sm text-center" style={{ color: '#c8a84b' }}>
-              Use the Describe Symptoms tab for instant results.
+            <p className="font-body text-sm" style={{ color: '#c8a84b' }}>
+              or click to browse from your device
             </p>
           </motion.div>
         )}

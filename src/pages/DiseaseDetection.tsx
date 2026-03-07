@@ -60,40 +60,35 @@ const DiseaseDetection = () => {
     setSelectedSymptoms((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   };
 
-  const canAnalyse = tab === 'upload' ? !!(image && crop) : !!(crop && selectedSymptoms.length > 0);
+  const canAnalyse = tab === 'upload' ? !!image : !!(crop && selectedSymptoms.length > 0);
 
   const handleAnalyse = useCallback(async () => {
     if (!canAnalyse) return;
-
-    // Check if model URL is properly configured ONLY for upload tab
-    if (tab === 'upload') {
-      const tmUrl = import.meta.env.VITE_TEACHABLE_MACHINE_URL;
-      if (!tmUrl || tmUrl === 'add_after_training') {
-        alert('Image detection coming soon! Use the Describe Symptoms tab for instant results.');
-        return;
-      }
-    }
 
     setLoading(true);
     setResult(null);
     setShowResult(false);
     try {
       if (tab === 'upload' && image) {
-        const detection = await detectDiseaseFromImage(image);
+        const detection = await detectDiseaseFromImage(image, language as 'en' | 'hi' | 'te');
         const initialResult: any = {
           diseaseName: detection.diseaseName,
           severity: detection.severity,
           confidence: detection.confidence,
-          description: '',
-          diseaseType: detection.isHealthy ? 'Healthy' : 'Disease Detected',
-          urgency: detection.isHealthy ? 'None' : 'Act Soon',
+          description: detection.description,
+          diseaseType: detection.diseaseName.toLowerCase().includes('healthy') ? 'Healthy' : 'Disease Detected',
+          urgency: detection.severity === 'high' ? 'Immediate Action' : detection.severity === 'medium' ? 'Act Soon' : 'None',
           region: 'Local Field',
-          recommendedMedicine: '',
-          fertilizerAdvisory: '',
-          precautions: [],
-          organicAlternatives: [],
-          additionalTips: '',
+          recommendedMedicine: detection.treatment,
+          fertilizerAdvisory: detection.fertilizerAdvisory,
+          precautions: detection.precautions,
+          organicAlternatives: [detection.organicAlternatives],
+          additionalTips: detection.additionalTips,
         };
+        // Ensure crop context is updated if auto-detected
+        if (detection.cropName && detection.cropName !== 'Unknown') {
+          setCrop(detection.cropName);
+        }
         setResult(initialResult);
       } else if (tab === 'symptoms' && crop && selectedSymptoms.length > 0) {
         const res = await detectDiseaseFromSymptoms({
@@ -290,7 +285,6 @@ const DiseaseDetection = () => {
                   {tab === 'upload' ? (
                     <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
                       <UploadZone image={image} preview={imagePreview} onImageSelect={(f, p) => { setImage(f); setImagePreview(p); }} />
-                      <CropSelector selected={crop} onSelect={setCrop} label={t('disease.selectCrop')} />
                     </motion.div>
                   ) : (
                     <motion.div key="symptoms" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
@@ -372,7 +366,7 @@ const DiseaseDetection = () => {
                 )}
                 {!canAnalyse && !loading && (
                   <div className="w-full py-4 rounded-full font-body text-sm text-center" style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(232,245,232,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    {tab === 'upload' ? 'Select image & crop to continue' : 'Select crop & symptoms to continue'}
+                    {tab === 'upload' ? 'Upload an image to continue' : 'Select crop & symptoms to continue'}
                   </div>
                 )}
               </AnimatePresence>

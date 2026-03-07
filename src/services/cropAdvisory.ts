@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase'
 
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
+
 export interface CropInput {
   n: number
   p: number
@@ -119,4 +121,176 @@ export async function getCropRecommendation(
   ))
 
   return results
+}
+
+export interface LocationAdvisoryInput {
+  city: string
+  crop: string
+  season: string
+  language: 'en' | 'hi' | 'te'
+}
+
+export interface CropSuitabilityResult {
+  verdict: 'yes' | 'no' | 'maybe'
+  climateMatch: number
+  reason: string
+  bestSeason: string
+  expectedYield: string
+  keyChallenges: string
+  recommendedFertilizers: string
+  precautions: string
+  additionalTips: string
+}
+
+export interface LocationCropResult {
+  cropName: string
+  emoji: string
+  reason: string
+  bestSeason: string
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  climateMatch: number
+}
+
+export async function checkCropSuitability(
+  city: string,
+  crop: string,
+  season: string,
+  language: 'en' | 'hi' | 'te'
+): Promise<CropSuitabilityResult> {
+
+  const langMap = { en: 'English', hi: 'Hindi', te: 'Telugu' }
+
+  const prompt = `
+You are an expert agricultural scientist with deep 
+knowledge of Indian regional farming conditions.
+
+Farmer Location: ${city}, India
+Crop: ${crop}
+Season: ${season}
+
+Analyze if this crop can be grown successfully here.
+
+Respond ONLY in ${langMap[language]}.
+Respond ONLY in valid JSON, no markdown:
+{
+  "verdict": "yes or no or maybe",
+  "climateMatch": 85,
+  "reason": "detailed explanation based on climate and soil of this city",
+  "bestSeason": "best season to grow in this location",
+  "expectedYield": "expected yield per acre",
+  "keyChallenges": "specific challenges in this region",
+  "recommendedFertilizers": "specific fertilizers for this region",
+  "precautions": "region specific precautions",
+  "additionalTips": "local market advice and government schemes"
+}
+
+verdict must be exactly: yes, no, or maybe
+climateMatch must be number 0-100
+`
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+      })
+    }
+  )
+
+  const data = await response.json()
+  if (!response.ok || data.error) {
+    throw new Error(data.error?.message || 'API failed')
+  }
+
+  const text = data.candidates[0].content.parts[0].text
+  let clean = text.replace(/```json|```/g, '').trim()
+  const start = clean.indexOf('{')
+  const end = clean.lastIndexOf('}')
+  if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
+
+  try {
+    const result = JSON.parse(clean)
+    return {
+      verdict: result.verdict || 'maybe',
+      climateMatch: result.climateMatch || 70,
+      reason: result.reason || '',
+      bestSeason: result.bestSeason || '',
+      expectedYield: result.expectedYield || '',
+      keyChallenges: result.keyChallenges || '',
+      recommendedFertilizers: result.recommendedFertilizers || '',
+      precautions: result.precautions || '',
+      additionalTips: result.additionalTips || ''
+    }
+  } catch {
+    throw new Error('Could not process response. Try again.')
+  }
+}
+
+export async function getBestCropsForLocation(
+  city: string,
+  season: string,
+  language: 'en' | 'hi' | 'te'
+): Promise<LocationCropResult[]> {
+
+  const langMap = { en: 'English', hi: 'Hindi', te: 'Telugu' }
+
+  const prompt = `
+You are an expert agricultural scientist 
+specializing in Indian regional farming.
+
+Location: ${city}, India
+Season: ${season}
+
+Recommend TOP 5 most suitable crops for 
+this specific location and season.
+
+Respond ONLY in ${langMap[language]}.
+Respond ONLY in valid JSON array, no markdown:
+[
+  {
+    "cropName": "Rice",
+    "emoji": "🌾",
+    "reason": "why this suits this location",
+    "bestSeason": "Kharif",
+    "difficulty": "Easy",
+    "climateMatch": 92
+  }
+]
+
+difficulty must be: Easy, Medium, or Hard
+climateMatch must be number 0-100
+Be very specific to the Indian city mentioned.
+`
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+      })
+    }
+  )
+
+  const data = await response.json()
+  if (!response.ok || data.error) {
+    throw new Error(data.error?.message || 'API failed')
+  }
+
+  const text = data.candidates[0].content.parts[0].text
+  let clean = text.replace(/```json|```/g, '').trim()
+  const start = clean.indexOf('[')
+  const end = clean.lastIndexOf(']')
+  if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
+
+  try {
+    return JSON.parse(clean).slice(0, 5)
+  } catch {
+    throw new Error('Could not process response. Try again.')
+  }
 }

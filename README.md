@@ -201,10 +201,10 @@ agribloom-companion/
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/AKHI1630/agribloom-companion.git
+git clone https://github.com/AKHI1630/AGRICARE.git
 
 # Navigate to project
-cd agribloom-companion
+cd AGRICARE
 
 # Install dependencies
 npm install
@@ -223,6 +223,101 @@ VITE_GEMINI_API_KEY=your_gemini_api_key
 VITE_SARVAM_API_KEY=your_sarvam_api_key
 VITE_WEATHER_API_KEY=your_openweathermap_key
 ```
+
+## 🔧 Troubleshooting — If Features Don't Work
+
+### ❌ AgriBot / Disease Detection / Location Advisory not working
+**Reason:** Gemini API quota exceeded or invalid key
+
+**Fix:**
+1. Go to https://aistudio.google.com
+2. Sign in with Google account
+3. Click "Get API Key" → "Create API Key"
+4. Copy the new key
+5. Open `.env` file and replace:
+   VITE_GEMINI_API_KEY=your_new_key_here
+6. Stop server and restart: `npm run dev`
+
+---
+
+### ❌ Weather widget not showing
+**Reason:** OpenWeatherMap key not activated (takes 15 mins) or invalid
+
+**Fix:**
+1. Go to https://openweathermap.org
+2. Sign up for free account
+3. Go to API Keys tab and copy your key
+4. Open `.env` and replace:
+   VITE_WEATHER_API_KEY=your_new_key_here
+5. Wait 15 minutes for key to activate
+6. Restart server: `npm run dev`
+
+---
+
+### ❌ Voice output sounds unnatural
+**Reason:** Sarvam AI key invalid or expired
+
+**Fix:**
+1. Go to https://sarvam.ai
+2. Sign up for free account
+3. Get API key from dashboard
+4. Open `.env` and replace:
+   VITE_SARVAM_API_KEY=your_new_key_here
+5. Restart server: `npm run dev`
+
+---
+
+### ❌ Crop Advisory showing no results
+**Reason:** Supabase RLS policy blocking database reads
+
+**Fix:**
+Go to your Supabase project → SQL Editor → Run:
+
+CREATE POLICY "public_read"
+ON public.crop_advisory
+FOR SELECT
+TO anon
+USING (true);
+
+---
+
+### ❌ Voice input mic not working
+**Reason:** Wrong browser or microphone not allowed
+
+**Fix:**
+- Use Google Chrome only
+- Click Allow when browser asks for microphone
+- In production the app must run on HTTPS
+
+---
+
+### ❌ App is completely blank
+**Reason:** Missing or incorrect environment variables
+
+**Fix:**
+Make sure .env file in root folder has all 5 variables:
+
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_SARVAM_API_KEY=your_sarvam_api_key
+VITE_WEATHER_API_KEY=your_openweathermap_key
+
+Restart server after any .env changes.
+
+---
+
+### 💡 Free Tier Limits
+
+| Service | Free Limit |
+|---------|-----------|
+| Gemini AI | 1500 requests/day |
+| OpenWeatherMap | 1000 calls/day |
+| Sarvam AI | 1000 requests/day |
+| Supabase | 50,000 rows free |
+
+> 💡 Tip: Create a new Google account to get 
+> fresh Gemini quota if limit is reached during demo.
 
 ### Run Development Server
 ```bash
@@ -263,15 +358,6 @@ npm run build
 
 6. **Government Integration** — Shows actual schemes
    with eligibility and direct portal links
-
----
-
-## 👥 Team
-
-Built with ❤️ for Indian Farmers
-
-**Institution:** GITAM University, Visakhapatnam
-**Event:** [Hackathon Name]
 
 ---
 

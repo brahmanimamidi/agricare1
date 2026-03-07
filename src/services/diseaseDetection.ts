@@ -68,64 +68,76 @@ severity must be: low, medium, or high
 confidence must be number 60-98
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [
-            {
-              inline_data: {
-                mime_type: imageFile.type || 'image/jpeg',
-                data: base64
-              }
-            },
-            { text: prompt }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024
-        }
-      })
-    }
-  )
-
-  const data = await response.json()
-  console.log('Vision response:', data)
-
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'Vision API failed')
-  }
-
-  const text = data.candidates[0].content.parts[0].text
-  let clean = text.replace(/```json|```/g, '').trim()
-  const start = clean.indexOf('{')
-  const end = clean.lastIndexOf('}')
-  if (start !== -1 && end !== -1) {
-    clean = clean.substring(start, end + 1)
-  }
-
   try {
-    const result = JSON.parse(clean)
-    return {
-      diseaseName: result.diseaseName || 'Unknown',
-      cropName: result.cropName || 'Unknown',
-      severity: result.severity || 'medium',
-      confidence: result.confidence || 75,
-      description: result.description || '',
-      treatment: result.treatment || '',
-      fertilizerAdvisory: result.fertilizerAdvisory || '',
-      precautions: Array.isArray(result.precautions)
-        ? result.precautions : [],
-      organicAlternatives: result.organicAlternatives || '',
-      additionalTips: result.additionalTips || ''
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [
+              {
+                inline_data: {
+                  mime_type: imageFile.type || 'image/jpeg',
+                  data: base64
+                }
+              },
+              { text: prompt }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1024
+          }
+        })
+      }
+    )
+
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
     }
-  } catch {
-    throw new Error('Could not process image. Try again.')
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+    // console.log('Vision response:', data)
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'Vision API failed')
+    }
+
+    const text = data.candidates[0].content.parts[0].text
+    let clean = text.replace(/```json|```/g, '').trim()
+    const start = clean.indexOf('{')
+    const end = clean.lastIndexOf('}')
+    if (start !== -1 && end !== -1) {
+      clean = clean.substring(start, end + 1)
+    }
+
+    try {
+      const result = JSON.parse(clean)
+      return {
+        diseaseName: result.diseaseName || 'Unknown',
+        cropName: result.cropName || 'Unknown',
+        severity: result.severity || 'medium',
+        confidence: result.confidence || 75,
+        description: result.description || '',
+        treatment: result.treatment || '',
+        fertilizerAdvisory: result.fertilizerAdvisory || '',
+        precautions: Array.isArray(result.precautions)
+          ? result.precautions : [],
+        organicAlternatives: result.organicAlternatives || '',
+        additionalTips: result.additionalTips || ''
+      }
+    } catch {
+      throw new Error('Could not process image. Try again.')
+    }
+  } catch (error: any) {
+    console.error('Vision API error:', error);
+    throw error;
   }
 }
 
@@ -160,25 +172,46 @@ Include medicine brand names available in India.
 Use simple language a farmer can understand.
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 1024
-        }
-      })
-    }
-  )
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 1024
+          }
+        })
+      }
+    )
 
-  const data = await response.json()
-  const text = data.candidates[0].content.parts[0].text
-  const clean = text.replace(/```json|```/g, '').trim()
-  return JSON.parse(clean)
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'Gemini API failed')
+    }
+
+    const text = data.candidates[0].content.parts[0].text
+    const clean = text.replace(/```json|```/g, '').trim()
+    try {
+      return JSON.parse(clean)
+    } catch {
+      throw new Error('Could not parse advisory response.');
+    }
+  } catch (error: any) {
+    console.error('Advisory API error:', error);
+    throw error;
+  }
 }
 
 export async function askFollowUpQuestion(
@@ -203,23 +236,40 @@ Answer in ${langMap[language]} only.
 Keep answer practical, simple, under 150 words.
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 512
-        }
-      })
-    }
-  )
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.5,
+            maxOutputTokens: 512
+          }
+        })
+      }
+    )
 
-  const data = await response.json()
-  return data.candidates[0].content.parts[0].text
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'Gemini API failed')
+    }
+
+    return data.candidates[0].content.parts[0].text
+  } catch (error: any) {
+    console.error('Follow-up chat error:', error);
+    throw error;
+  }
 }
 
 export interface SymptomInput {
@@ -288,69 +338,81 @@ severity must be exactly: low, medium, or high
 confidence must be a number between 60 and 98
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 1024
-        }
-      })
-    }
-  )
-
-  const data = await response.json()
-
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'Gemini API failed')
-  }
-
-  const text = data.candidates[0].content.parts[0].text
-  console.log('Raw Gemini response:', text)
-  let clean = text
-    .replace(/```json/g, '')
-    .replace(/```/g, '')
-    .trim()
-
-  const jsonStart = clean.indexOf('{')
-  const jsonEnd = clean.lastIndexOf('}')
-
-  if (jsonStart !== -1 && jsonEnd !== -1) {
-    clean = clean.substring(jsonStart, jsonEnd + 1)
-  }
-
-  console.log('Cleaned JSON:', clean)
-
   try {
-    const result = JSON.parse(clean)
-
-    return {
-      diseaseName: result.diseaseName || 'Unknown Disease',
-      severity: result.severity || 'medium',
-      confidence: result.confidence || 75,
-      description: result.description || '',
-      treatment: result.treatment || '',
-      fertilizerAdvisory: result.fertilizerAdvisory || '',
-      precautions: Array.isArray(result.precautions)
-        ? result.precautions
-        : [result.precautions || ''],
-      organicAlternatives: result.organicAlternatives || '',
-      additionalTips: result.additionalTips || ''
-    }
-  } catch (parseError) {
-    console.error('Parse error:', parseError)
-    console.error('Failed to parse:', clean)
-
-    throw new Error(
-      'Could not process response. Please try again.'
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1024
+          }
+        })
+      }
     )
+
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'Gemini API failed')
+    }
+
+    const text = data.candidates[0].content.parts[0].text
+    console.log('Raw Gemini response:', text)
+    let clean = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim()
+
+    const jsonStart = clean.indexOf('{')
+    const jsonEnd = clean.lastIndexOf('}')
+
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      clean = clean.substring(jsonStart, jsonEnd + 1)
+    }
+
+    console.log('Cleaned JSON:', clean)
+
+    try {
+      const result = JSON.parse(clean)
+
+      return {
+        diseaseName: result.diseaseName || 'Unknown Disease',
+        severity: result.severity || 'medium',
+        confidence: result.confidence || 75,
+        description: result.description || '',
+        treatment: result.treatment || '',
+        fertilizerAdvisory: result.fertilizerAdvisory || '',
+        precautions: Array.isArray(result.precautions)
+          ? result.precautions
+          : [result.precautions || ''],
+        organicAlternatives: result.organicAlternatives || '',
+        additionalTips: result.additionalTips || ''
+      }
+    } catch (parseError) {
+      console.error('Parse error:', parseError)
+      console.error('Failed to parse:', clean)
+
+      throw new Error(
+        'Could not process response. Please try again.'
+      )
+    }
+  } catch (error: any) {
+    console.error('Detection API error:', error);
+    throw error;
   }
 }
 
@@ -373,18 +435,35 @@ Practical, simple answer under 120 words.
 Include specific product names if relevant.
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 256 }
-      })
-    }
-  )
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 256 }
+        })
+      }
+    )
 
-  const data = await response.json()
-  return data.candidates[0].content.parts[0].text
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'Gemini API failed')
+    }
+
+    return data.candidates[0].content.parts[0].text
+  } catch (error: any) {
+    console.error('Follow up API error:', error);
+    throw error;
+  }
 }

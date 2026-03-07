@@ -1,3 +1,7 @@
+let currentAudio: HTMLAudioElement | null = null;
+let onStartCallback: (() => void) | null = null;
+let onEndCallback: (() => void) | null = null;
+
 async function speakWithSarvam(
     text: string,
     language: 'en' | 'hi' | 'te',
@@ -5,6 +9,14 @@ async function speakWithSarvam(
     onStart?: () => void,
     onEnd?: () => void
 ) {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+
+    onStartCallback = onStart || null;
+    onEndCallback = onEnd || null;
+
     const languageConfig = {
         en: { language_code: 'en-IN', speaker: 'hitesh' },
         hi: { language_code: 'hi-IN', speaker: 'karun' },
@@ -25,7 +37,7 @@ async function speakWithSarvam(
     if (!cleanText) return
 
     try {
-        if (onStart) onStart()
+        if (onStartCallback) onStartCallback()
 
         const response = await fetch(
             'https://api.sarvam.ai/text-to-speech',
@@ -48,8 +60,6 @@ async function speakWithSarvam(
         )
 
         const data = await response.json()
-        console.log('Sarvam response:', data)
-
         if (!response.ok) {
             throw new Error('Sarvam TTS failed')
         }
@@ -63,22 +73,25 @@ async function speakWithSarvam(
         const byteArray = new Uint8Array(byteNumbers)
         const audioBlob = new Blob([byteArray], { type: 'audio/wav' })
         const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
 
-        audio.onended = () => {
+        currentAudio = new Audio(audioUrl)
+
+        currentAudio.onended = () => {
             URL.revokeObjectURL(audioUrl)
-            if (onEnd) onEnd()
+            if (onEndCallback) onEndCallback()
+            currentAudio = null;
         }
 
-        audio.onerror = () => {
-            if (onEnd) onEnd()
+        currentAudio.onerror = () => {
+            if (onEndCallback) onEndCallback()
+            currentAudio = null;
         }
 
-        await audio.play()
+        await currentAudio.play()
 
     } catch (error) {
         console.error('Sarvam error:', error)
-        fallbackBrowserTTS(cleanText, language, onEnd)
+        fallbackBrowserTTS(cleanText, language, onEndCallback || undefined)
     }
 }
 
@@ -121,12 +134,17 @@ export function useSpeechSynthesis() {
     }
 
     const stop = () => {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+            if (onEndCallback) onEndCallback();
+        }
         window.speechSynthesis.cancel()
     }
 
-    // To maintain compatibility with AgriBot.tsx, we need isSpeaking,
-    // we do not have it here yet. 
-    const isSpeaking = () => false;
+    const isSpeaking = () => {
+        return currentAudio !== null || window.speechSynthesis.speaking;
+    };
 
     return { isSupported, speak, stop, isSpeaking }
 }

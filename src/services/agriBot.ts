@@ -84,24 +84,41 @@ Keep answers simple and farmer-friendly.`
         })
       }
     )
-  } catch (fetchError: any) {
-    console.error('Fetch failed:', fetchError.message)
-    throw new Error('Network error: ' + fetchError.message)
-  }
 
-  const data = await response.json()
-  console.log('Status:', response.status)
-  console.log('Data:', JSON.stringify(data))
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+    if (!response.ok) {
+      throw new Error(`API error ${response.status}`);
+    }
 
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'API error ' + response.status)
-  }
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('Could not parse JSON response from Gemini.');
+    }
 
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error('No response from Gemini')
-  }
+    // console.log('Status:', response.status)
+    // console.log('Data:', JSON.stringify(data))
 
-  return {
-    reply: data.candidates[0].content.parts[0].text
+    if (data.error) {
+      throw new Error(data.error?.message || 'API error ' + response.status)
+    }
+
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('No response from Gemini')
+    }
+
+    return {
+      reply: data.candidates[0].content.parts[0].text
+    }
+
+  } catch (error: any) {
+    console.error('Fetch failed:', error.message)
+    throw error;
   }
 }

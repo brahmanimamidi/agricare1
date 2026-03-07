@@ -30,97 +30,106 @@ export async function getCropRecommendation(
 
   console.log('Fetching all crops from Supabase...')
 
-  const { data, error } = await supabase
-    .from('crop_advisory')
-    .select('*')
+  try {
+    const { data, error } = await supabase
+      .from('crop_advisory')
+      .select('*')
 
-  console.log('Total rows fetched:', data?.length)
-  console.log('Error if any:', error)
-  console.log('First row sample:', data?.[0])
+    // console.log('Total rows fetched:', data?.length)
+    // console.log('Error if any:', error)
+    // console.log('First row sample:', data?.[0])
 
-  if (error) throw new Error(error.message)
-  if (!data || data.length === 0) {
-    throw new Error('No data in database')
-  }
-
-  // Do ALL comparison in JavaScript
-  // No Supabase filtering at all
-  const scored = data.map((row: any) => {
-
-    // Get values - try both uppercase and lowercase
-    const rowN = Number(row.N ?? row.n ?? 0)
-    const rowP = Number(row.P ?? row.p ?? 0)
-    const rowK = Number(row.K ?? row.k ?? 0)
-    const rowTemp = Number(row.temperature ?? 0)
-    const rowHumid = Number(row.humidity ?? 0)
-    const rowPh = Number(row.ph ?? 0)
-    const rowRain = Number(row.rainfall ?? 0)
-    const rowLabel = row.label ?? row.crop_name ?? ''
-
-    // Euclidean distance - normalized
-    const nDiff = Math.abs(rowN - inputs.n) / 140
-    const pDiff = Math.abs(rowP - inputs.p) / 145
-    const kDiff = Math.abs(rowK - inputs.k) / 205
-    const tempDiff = Math.abs(rowTemp - inputs.temperature) / 40
-    const humidDiff = Math.abs(rowHumid - inputs.humidity) / 100
-    const phDiff = Math.abs(rowPh - inputs.ph) / 10
-    const rainDiff = Math.abs(rowRain - inputs.rainfall) / 300
-
-    const distance = Math.sqrt(
-      nDiff ** 2 + pDiff ** 2 + kDiff ** 2 +
-      tempDiff ** 2 + humidDiff ** 2 +
-      phDiff ** 2 + rainDiff ** 2
-    )
-
-    return {
-      label: rowLabel,
-      N: rowN,
-      P: rowP,
-      K: rowK,
-      temperature: rowTemp,
-      humidity: rowHumid,
-      ph: rowPh,
-      rainfall: rowRain,
-      distance
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw new Error('Database Error: could not fetch crops.');
     }
-  })
 
-  // Sort by closest match
-  scored.sort((a: any, b: any) => a.distance - b.distance)
-
-  console.log('Top 5 matches:', scored.slice(0, 5).map(
-    (r: any) => ({ label: r.label, distance: r.distance.toFixed(3) })
-  ))
-
-  // Group by crop label, keep best match per crop
-  const cropMap: { [key: string]: any } = {}
-
-  scored.forEach((row: any) => {
-    if (!cropMap[row.label]) {
-      cropMap[row.label] = row
+    if (!data || data.length === 0) {
+      throw new Error('No data in database')
     }
-  })
 
-  // Convert to array and calculate confidence
-  const maxDistance = Math.sqrt(7) // max possible distance
+    // Do ALL comparison in JavaScript
+    // No Supabase filtering at all
+    const scored = data.map((row: any) => {
 
-  const results = Object.values(cropMap)
-    .sort((a: any, b: any) => a.distance - b.distance)
-    .slice(0, 5)
-    .map((row: any) => ({
-      ...row,
-      confidence: Math.round(
-        Math.max(0, Math.min(100,
-          (1 - row.distance / maxDistance) * 100
-        ))
+      // Get values - try both uppercase and lowercase
+      const rowN = Number(row.N ?? row.n ?? 0)
+      const rowP = Number(row.P ?? row.p ?? 0)
+      const rowK = Number(row.K ?? row.k ?? 0)
+      const rowTemp = Number(row.temperature ?? 0)
+      const rowHumid = Number(row.humidity ?? 0)
+      const rowPh = Number(row.ph ?? 0)
+      const rowRain = Number(row.rainfall ?? 0)
+      const rowLabel = row.label ?? row.crop_name ?? ''
+
+      // Euclidean distance - normalized
+      const nDiff = Math.abs(rowN - inputs.n) / 140
+      const pDiff = Math.abs(rowP - inputs.p) / 145
+      const kDiff = Math.abs(rowK - inputs.k) / 205
+      const tempDiff = Math.abs(rowTemp - inputs.temperature) / 40
+      const humidDiff = Math.abs(rowHumid - inputs.humidity) / 100
+      const phDiff = Math.abs(rowPh - inputs.ph) / 10
+      const rainDiff = Math.abs(rowRain - inputs.rainfall) / 300
+
+      const distance = Math.sqrt(
+        nDiff ** 2 + pDiff ** 2 + kDiff ** 2 +
+        tempDiff ** 2 + humidDiff ** 2 +
+        phDiff ** 2 + rainDiff ** 2
       )
-    }))
 
-  console.log('Final results:', results.map(
-    (r: any) => ({ label: r.label, confidence: r.confidence })
-  ))
+      return {
+        label: rowLabel,
+        N: rowN,
+        P: rowP,
+        K: rowK,
+        temperature: rowTemp,
+        humidity: rowHumid,
+        ph: rowPh,
+        rainfall: rowRain,
+        distance
+      }
+    })
 
-  return results
+    // Sort by closest match
+    scored.sort((a: any, b: any) => a.distance - b.distance)
+
+    console.log('Top 5 matches:', scored.slice(0, 5).map(
+      (r: any) => ({ label: r.label, distance: r.distance.toFixed(3) })
+    ))
+
+    // Group by crop label, keep best match per crop
+    const cropMap: { [key: string]: any } = {}
+
+    scored.forEach((row: any) => {
+      if (!cropMap[row.label]) {
+        cropMap[row.label] = row
+      }
+    })
+
+    // Convert to array and calculate confidence
+    const maxDistance = Math.sqrt(7) // max possible distance
+
+    const results = Object.values(cropMap)
+      .sort((a: any, b: any) => a.distance - b.distance)
+      .slice(0, 5)
+      .map((row: any) => ({
+        ...row,
+        confidence: Math.round(
+          Math.max(0, Math.min(100,
+            (1 - row.distance / maxDistance) * 100
+          ))
+        )
+      }))
+
+    console.log('Final results:', results.map(
+      (r: any) => ({ label: r.label, confidence: r.confidence })
+    ))
+
+    return results
+  } catch (err: any) {
+    console.error('getCropRecommendation error:', err);
+    throw err;
+  }
 }
 
 export interface LocationAdvisoryInput {
@@ -198,44 +207,56 @@ verdict must be exactly: yes, no, or maybe
 climateMatch must be number 0-100
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
-      })
-    }
-  )
-
-  const data = await response.json()
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'API failed')
-  }
-
-  const text = data.candidates[0].content.parts[0].text
-  let clean = text.replace(/```json|```/g, '').trim()
-  const start = clean.indexOf('{')
-  const end = clean.lastIndexOf('}')
-  if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
-
   try {
-    const result = JSON.parse(clean)
-    return {
-      verdict: result.verdict || 'maybe',
-      climateMatch: result.climateMatch || 70,
-      reason: result.reason || '',
-      bestSeason: result.bestSeason || '',
-      expectedYield: result.expectedYield || '',
-      keyChallenges: result.keyChallenges || '',
-      recommendedFertilizers: result.recommendedFertilizers || '',
-      precautions: result.precautions || '',
-      additionalTips: result.additionalTips || ''
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+        })
+      }
+    )
+
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
     }
-  } catch {
-    throw new Error('Could not process response. Try again.')
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'API failed')
+    }
+
+    const text = data.candidates[0].content.parts[0].text
+    let clean = text.replace(/```json|```/g, '').trim()
+    const start = clean.indexOf('{')
+    const end = clean.lastIndexOf('}')
+    if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
+
+    try {
+      const result = JSON.parse(clean)
+      return {
+        verdict: result.verdict || 'maybe',
+        climateMatch: result.climateMatch || 70,
+        reason: result.reason || '',
+        bestSeason: result.bestSeason || '',
+        expectedYield: result.expectedYield || '',
+        keyChallenges: result.keyChallenges || '',
+        recommendedFertilizers: result.recommendedFertilizers || '',
+        precautions: result.precautions || '',
+        additionalTips: result.additionalTips || ''
+      }
+    } catch {
+      throw new Error('Could not process response. Try again.')
+    }
+  } catch (error: any) {
+    console.error('checkCropSuitability error:', error);
+    throw error;
   }
 }
 
@@ -275,35 +296,47 @@ climateMatch must be number 0-100
 Be very specific to the Indian city mentioned.
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
-      })
-    }
-  )
-
-  const data = await response.json()
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'API failed')
-  }
-
-  const text = data.candidates[0].content.parts[0].text
-  let clean = text.replace(/```json|```/g, '').trim()
-  const start = clean.indexOf('[')
-  const end = clean.lastIndexOf(']')
-  if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
-
   try {
-    const cleanedData = JSON.parse(clean);
-    return cleanedData.slice(0, 3);
-  } catch (error) {
-    console.error('Error fetching best crops:', error);
-    throw new Error('Could not fetch best crops for this location. Please try again later.');
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+        })
+      }
+    )
+
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'API failed')
+    }
+
+    const text = data.candidates[0].content.parts[0].text
+    let clean = text.replace(/```json|```/g, '').trim()
+    const start = clean.indexOf('[')
+    const end = clean.lastIndexOf(']')
+    if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
+
+    try {
+      const cleanedData = JSON.parse(clean);
+      return cleanedData.slice(0, 3);
+    } catch (parseError) {
+      console.error('Error parsing best crops:', parseError);
+      throw new Error('Could not fetch best crops for this location. Please try again later.');
+    }
+  } catch (fetchError: any) {
+    console.error('getBestCropsForLocation error:', fetchError);
+    throw fetchError;
   }
 }
 
@@ -348,32 +381,44 @@ Include real website links.
 Return exactly 5 schemes.
 `
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
-      })
-    }
-  )
-
-  const data = await response.json()
-  if (!response.ok || data.error) {
-    throw new Error(data.error?.message || 'API failed')
-  }
-
-  const text = data.candidates[0].content.parts[0].text
-  let clean = text.replace(/```json|```/g, '').trim()
-  const start = clean.indexOf('[')
-  const end = clean.lastIndexOf(']')
-  if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
-
   try {
-    return JSON.parse(clean).slice(0, 5)
-  } catch {
-    throw new Error('Could not load schemes. Try again.')
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
+        })
+      }
+    )
+
+    if (response.status === 429) {
+      throw new Error('AI service busy. Please wait and try again.')
+    }
+    if (response.status === 401) {
+      throw new Error('API key invalid. Please check configuration.')
+    }
+
+    const data = await response.json()
+    if (!response.ok || data.error) {
+      throw new Error(data.error?.message || 'API failed')
+    }
+
+    const text = data.candidates[0].content.parts[0].text
+    let clean = text.replace(/```json|```/g, '').trim()
+    const start = clean.indexOf('[')
+    const end = clean.lastIndexOf(']')
+    if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
+
+    try {
+      return JSON.parse(clean).slice(0, 5)
+    } catch {
+      throw new Error('Could not load schemes. Try again.')
+    }
+  } catch (error: any) {
+    console.error('getGovernmentSchemes error:', error);
+    throw error;
   }
 }

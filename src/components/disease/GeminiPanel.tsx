@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DiseaseDetectionResult } from '@/types';
 import PrecautionList from './PrecautionList';
 import FollowUpChat from './FollowUpChat';
+import { shareResult, formatDiseaseResultForShare } from '@/utils/shareResults';
 
 interface GeminiPanelProps {
   result: DiseaseDetectionResult;
@@ -22,9 +23,16 @@ const GeminiPanel = ({ result, crop }: GeminiPanelProps) => {
     }
   }, [open, loaded]);
 
-  const handleCopyResults = () => {
-    const summary = `Disease: ${result.diseaseName}\nSeverity: ${result.severity}\nMedicine: ${result.recommendedMedicine}\nPrecautions: ${result.precautions.join(', ')}`;
-    navigator.clipboard.writeText(summary);
+  const handleShareResults = () => {
+    shareResult(
+      'AgriCare Disease Detection',
+      formatDiseaseResultForShare(
+        result.diseaseName,
+        crop || 'Unknown',
+        result.severity,
+        result.recommendedMedicine
+      )
+    );
   };
 
   const sections = [
@@ -172,9 +180,9 @@ const GeminiPanel = ({ result, crop }: GeminiPanelProps) => {
                     🔄 Check Another Crop
                   </button>
                   <button
-                    onClick={handleCopyResults}
-                    className="flex-1 py-3 rounded-full font-body font-medium text-sm"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,168,75,0.3)', color: '#c8a84b' }}
+                    onClick={handleShareResults}
+                    className="flex-1 py-3 rounded-full font-body font-medium text-sm transition-all"
+                    style={{ background: 'rgba(200,168,75,0.1)', border: '1px solid rgba(200,168,75,0.4)', color: '#c8a84b' }}
                   >
                     📤 Share Results
                   </button>

@@ -6,6 +6,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { getCropRecommendation, CropResult, checkCropSuitability, getBestCropsForLocation, CropSuitabilityResult, LocationCropResult, GovernmentScheme, getGovernmentSchemes } from '@/services/cropAdvisory';
 import { getWeatherForCity, WeatherData } from '@/services/weatherService';
+import { shareResult, formatCropResultForShare, formatLocationResultForShare } from '@/utils/shareResults';
 import { ArrowLeft, Sparkles, MapPin } from 'lucide-react';
 
 const styleSheet = document.createElement("style");
@@ -599,6 +600,44 @@ const CropAdvisory = () => {
                     </div>
                   ))}
                 </div>
+
+                <button
+                  onClick={() => shareResult(
+                    'AgriCare Crop Recommendation',
+                    formatCropResultForShare(
+                      crop.label,
+                      crop.confidence,
+                      Number(form.nitrogen),
+                      Number(form.phosphorus),
+                      Number(form.potassium)
+                    )
+                  )}
+                  style={{
+                    width: '100%',
+                    marginTop: '16px',
+                    padding: '12px',
+                    background: 'rgba(200,168,75,0.08)',
+                    border: '1px solid rgba(200,168,75,0.3)',
+                    borderRadius: '12px',
+                    color: '#c8a84b',
+                    fontSize: '0.95rem',
+                    fontFamily: 'DM Sans',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(200,168,75,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(200,168,75,0.08)';
+                  }}
+                >
+                  📤 Share Result
+                </button>
               </div>
             ))}
           </div>
@@ -831,6 +870,44 @@ const CropAdvisory = () => {
                     <p className="text-xs font-body text-gray-300">{suitabilityResult.precautions}</p>
                   </div>
                 </div >
+
+                <button
+                  onClick={() => shareResult(
+                    'AgriCare Location Advisory',
+                    formatLocationResultForShare(
+                      locationForm.crop,
+                      locationForm.city,
+                      suitabilityResult.verdict,
+                      suitabilityResult.climateMatch,
+                      suitabilityResult.reason
+                    )
+                  )}
+                  style={{
+                    width: '100%',
+                    marginTop: '20px',
+                    padding: '14px',
+                    background: 'rgba(200,168,75,0.08)',
+                    border: '1px solid rgba(200,168,75,0.3)',
+                    borderRadius: '14px',
+                    color: '#c8a84b',
+                    fontSize: '1rem',
+                    fontFamily: 'DM Sans',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(200,168,75,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(200,168,75,0.08)';
+                  }}
+                >
+                  📤 Share Result
+                </button>
               </motion.div >
             </motion.div >
           )

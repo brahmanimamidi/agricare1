@@ -151,6 +151,16 @@ export interface LocationCropResult {
   climateMatch: number
 }
 
+export interface GovernmentScheme {
+  schemeName: string
+  ministry: string
+  benefit: string
+  eligibility: string
+  howToApply: string
+  deadline: string
+  link: string
+}
+
 export async function checkCropSuitability(
   city: string,
   crop: string,
@@ -189,7 +199,7 @@ climateMatch must be number 0-100
 `
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -266,7 +276,7 @@ Be very specific to the Indian city mentioned.
 `
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -289,8 +299,81 @@ Be very specific to the Indian city mentioned.
   if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
 
   try {
+    const cleanedData = JSON.parse(clean);
+    return cleanedData.slice(0, 3);
+  } catch (error) {
+    console.error('Error fetching best crops:', error);
+    throw new Error('Could not fetch best crops for this location. Please try again later.');
+  }
+}
+
+export async function getGovernmentSchemes(
+  crop: string,
+  city: string,
+  language: 'en' | 'hi' | 'te'
+): Promise<GovernmentScheme[]> {
+
+  const langMap = { en: 'English', hi: 'Hindi', te: 'Telugu' }
+
+  const prompt = `
+You are an expert on Indian agricultural 
+government schemes and subsidies.
+
+Farmer grows: ${crop}
+Farmer location: ${city}, India
+
+List TOP 5 most relevant current Indian 
+government schemes for this farmer.
+Include both central and state schemes.
+Include PM-KISAN, crop insurance, 
+fertilizer subsidies if relevant.
+
+Respond ONLY in ${langMap[language]}.
+Respond ONLY in valid JSON array, no markdown:
+[
+  {
+    "schemeName": "PM-KISAN",
+    "ministry": "Ministry of Agriculture",
+    "benefit": "Rs.6000 per year direct to bank account",
+    "eligibility": "All small and marginal farmers",
+    "howToApply": "Apply at nearest CSC center or pmkisan.gov.in",
+    "deadline": "Ongoing",
+    "link": "pmkisan.gov.in"
+  }
+]
+
+Be specific to the crop and state.
+Include actual benefit amounts in rupees.
+Include real website links.
+Return exactly 5 schemes.
+`
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
+      })
+    }
+  )
+
+  const data = await response.json()
+  if (!response.ok || data.error) {
+    throw new Error(data.error?.message || 'API failed')
+  }
+
+  const text = data.candidates[0].content.parts[0].text
+  let clean = text.replace(/```json|```/g, '').trim()
+  const start = clean.indexOf('[')
+  const end = clean.lastIndexOf(']')
+  if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1)
+
+  try {
     return JSON.parse(clean).slice(0, 5)
   } catch {
-    throw new Error('Could not process response. Try again.')
+    throw new Error('Could not load schemes. Try again.')
   }
 }

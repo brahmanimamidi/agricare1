@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { getCropRecommendation, CropResult, checkCropSuitability, getBestCropsForLocation, CropSuitabilityResult, LocationCropResult } from '@/services/cropAdvisory';
+import { getCropRecommendation, CropResult, checkCropSuitability, getBestCropsForLocation, CropSuitabilityResult, LocationCropResult, GovernmentScheme, getGovernmentSchemes } from '@/services/cropAdvisory';
+import { getWeatherForCity, WeatherData } from '@/services/weatherService';
 import { ArrowLeft, Sparkles, MapPin } from 'lucide-react';
 
 const styleSheet = document.createElement("style");
@@ -46,6 +47,14 @@ const CropAdvisory = () => {
   // Results state
   const [suitabilityResult, setSuitabilityResult] = useState<CropSuitabilityResult | null>(null);
   const [locationCrops, setLocationCrops] = useState<LocationCropResult[] | null>(null);
+
+  // Weather state
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  // Schemes state
+  const [schemes, setSchemes] = useState<GovernmentScheme[]>([]);
+  const [schemesLoading, setSchemesLoading] = useState(false);
 
   const handleChange = (field: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -119,6 +128,16 @@ const CropAdvisory = () => {
     setLocationCrops(null);
 
     try {
+      setWeatherLoading(true);
+      const weatherData = await getWeatherForCity(city);
+      setWeather(weatherData);
+    } catch {
+      // silently fail
+    } finally {
+      setWeatherLoading(false);
+    }
+
+    try {
       const res = await checkCropSuitability(
         city,
         crop,
@@ -148,6 +167,16 @@ const CropAdvisory = () => {
     setLocationCrops(null);
 
     try {
+      setWeatherLoading(true);
+      const weatherData = await getWeatherForCity(locationForm.city);
+      setWeather(weatherData);
+    } catch {
+      // silently fail
+    } finally {
+      setWeatherLoading(false);
+    }
+
+    try {
       const res = await getBestCropsForLocation(
         locationForm.city,
         locationForm.season,
@@ -160,6 +189,28 @@ const CropAdvisory = () => {
       setLoading(false);
     }
   };
+
+  const handleGetSchemes = async () => {
+    const city = locationForm.city;
+    const crop = locationForm.crop;
+    if (!city.trim() || !crop.trim()) {
+      setErrorProps('Please enter city and crop name first');
+      return;
+    }
+    setErrorProps(null);
+    try {
+      setSchemesLoading(true)
+      const result = await getGovernmentSchemes(
+        crop, city, language as 'en' | 'hi' | 'te'
+      )
+      setSchemes(result)
+    } catch (error: any) {
+      console.error('Schemes error:', error)
+      setErrorProps('Failed to load schemes. Try again.');
+    } finally {
+      setSchemesLoading(false)
+    }
+  }
 
   const glassInput = "w-full font-body text-sm focus:outline-none transition-all px-3 py-2.5 rounded-[10px]";
   const glassInputStyle = {
@@ -390,6 +441,25 @@ const CropAdvisory = () => {
                 🔍 Best Crops for My Location
               </motion.button>
             </div>
+
+            <button
+              onClick={handleGetSchemes}
+              disabled={schemesLoading}
+              style={{
+                width: '100%',
+                marginTop: '12px',
+                padding: '14px',
+                background: 'rgba(200,168,75,0.08)',
+                border: '1px solid rgba(200,168,75,0.4)',
+                borderRadius: '12px',
+                color: '#c8a84b',
+                fontSize: '1rem',
+                fontFamily: 'DM Sans',
+                cursor: 'pointer'
+              }}
+            >
+              {schemesLoading ? '⏳ Loading Schemes...' : '🏛️ Get Government Schemes for My Crop'}
+            </button>
           </motion.div>
         )}
 
@@ -540,6 +610,102 @@ const CropAdvisory = () => {
             <p className="text-center text-sm font-body py-12" style={{ color: 'rgba(232,245,232,0.5)' }}>{t('common.noResults')}</p>
           )
         }
+
+        {/* WEATHER CARD */}
+        {tab === 'location' && !weatherLoading && weather && (
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(200,168,75,0.25)',
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '20px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img
+                  src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                  width="50" height="50"
+                  alt="weather"
+                />
+                <div>
+                  <div style={{
+                    color: '#e8f5e8',
+                    fontFamily: 'Playfair Display',
+                    fontSize: '1.1rem'
+                  }}>
+                    {weather.city}
+                  </div>
+                  <div style={{
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: '0.85rem',
+                    textTransform: 'capitalize'
+                  }}>
+                    {weather.condition}
+                  </div>
+                </div>
+              </div>
+              <span style={{
+                background: 'rgba(100,200,100,0.15)',
+                border: '1px solid rgba(100,200,100,0.3)',
+                borderRadius: '20px',
+                padding: '4px 12px',
+                fontSize: '0.75rem',
+                color: '#90c645'
+              }}>
+                🟢 Live Weather
+              </span>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '12px',
+              marginBottom: '16px'
+            }}>
+              {[
+                { icon: '🌡️', value: `${weather.temperature}°C`, label: 'Temperature' },
+                { icon: '💧', value: `${weather.humidity}%`, label: 'Humidity' },
+                { icon: '🌧️', value: `${weather.rainfall}mm`, label: 'Rainfall' },
+                { icon: '💨', value: `${weather.windSpeed}km/h`, label: 'Wind' },
+              ].map((stat, i) => (
+                <div key={i} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.4rem' }}>{stat.icon}</div>
+                  <div style={{
+                    color: '#c8a84b',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    fontFamily: 'DM Sans'
+                  }}>
+                    {stat.value}
+                  </div>
+                  <div style={{
+                    color: 'rgba(255,255,255,0.4)',
+                    fontSize: '0.75rem'
+                  }}>
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              background: 'rgba(200,168,75,0.08)',
+              border: '1px solid rgba(200,168,75,0.2)',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: '0.9rem',
+              fontFamily: 'DM Sans'
+            }}>
+              {weather.farmingTip}
+            </div>
+          </div>
+        )}
 
         {/* TAB 2: Suitability Result */}
         {
@@ -730,6 +896,159 @@ const CropAdvisory = () => {
             </div>
           )
         }
+
+        {/* TAB 2: Government Schemes */}
+        {schemes.length > 0 && tab === 'location' && (
+          <div style={{ marginTop: '24px' }}>
+            <h3 style={{
+              color: '#c8a84b',
+              fontFamily: 'Playfair Display',
+              fontSize: '1.3rem',
+              marginBottom: '16px'
+            }}>
+              🏛️ Government Schemes for {locationForm.crop} Farmers
+            </h3>
+
+            {schemes.map((scheme, index) => (
+              <div key={index} style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(200,168,75,0.2)',
+                borderLeft: '4px solid #c8a84b',
+                borderRadius: '14px',
+                padding: '20px',
+                marginBottom: '12px',
+                overflow: 'hidden',
+                wordBreak: 'break-word'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: '10px'
+                }}>
+                  <h4 style={{
+                    color: '#e8f5e8',
+                    fontFamily: 'Playfair Display',
+                    fontSize: '0.95rem',
+                    margin: 0,
+                    wordBreak: 'break-word',
+                    flex: 1,
+                    marginRight: '8px'
+                  }}>
+                    {scheme.schemeName}
+                  </h4>
+                  <span style={{
+                    background: 'rgba(200,168,75,0.15)',
+                    border: '1px solid rgba(200,168,75,0.3)',
+                    borderRadius: '20px',
+                    padding: '2px 10px',
+                    fontSize: '0.65rem',
+                    color: '#c8a84b',
+                    marginLeft: '8px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    maxWidth: '150px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {scheme.ministry}
+                  </span>
+                </div>
+
+                <div style={{
+                  background: 'rgba(200,168,75,0.08)',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  marginBottom: '10px',
+                  color: '#c8a84b',
+                  fontSize: '0.9rem',
+                  fontFamily: 'DM Sans'
+                }}>
+                  💰 {scheme.benefit}
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: '8px',
+                  marginBottom: '10px'
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: 'rgba(255,255,255,0.4)',
+                      marginBottom: '4px'
+                    }}>
+                      ELIGIBILITY
+                    </div>
+                    <div style={{
+                      fontSize: '0.82rem',
+                      color: 'rgba(255,255,255,0.75)',
+                      fontFamily: 'DM Sans',
+                      lineHeight: '1.5',
+                      wordBreak: 'break-word'
+                    }}>
+                      {scheme.eligibility}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: 'rgba(255,255,255,0.4)',
+                      marginBottom: '4px'
+                    }}>
+                      HOW TO APPLY
+                    </div>
+                    <div style={{
+                      fontSize: '0.82rem',
+                      color: 'rgba(255,255,255,0.75)',
+                      fontFamily: 'DM Sans',
+                      lineHeight: '1.5',
+                      wordBreak: 'break-word'
+                    }}>
+                      {scheme.howToApply}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}>
+                  <span style={{
+                    fontSize: '0.78rem',
+                    color: 'rgba(255,255,255,0.4)',
+                    flex: 1,
+                    wordBreak: 'break-word',
+                    marginRight: '8px'
+                  }}>
+                    📅 {scheme.deadline}
+                  </span>
+
+                  <a
+                    href={scheme.link.startsWith('http') ? scheme.link : `https://${scheme.link}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#c8a84b',
+                      fontSize: '0.85rem',
+                      textDecoration: 'none',
+                      border: '1px solid rgba(200,168,75,0.3)',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Visit Portal →
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div >
     </motion.div >
   );

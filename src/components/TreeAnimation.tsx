@@ -1,144 +1,216 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguage } from '@/context/LanguageContext';
+import { useEffect, useRef } from 'react'
 
-interface TreeAnimationProps {
-  onComplete: () => void;
+interface Leaf {
+    id: number
+    x: number
+    y: number
+    size: number
+    rotation: number
+    rotationSpeed: number
+    fallSpeed: number
+    swayAmount: number
+    swaySpeed: number
+    swayOffset: number
+    opacity: number
+    color: string
+    shape: number
 }
 
-const TreeAnimation = ({ onComplete }: TreeAnimationProps) => {
-  const { t } = useLanguage();
-  const [show, setShow] = useState(true);
+const leafColors = [
+    '#2d6a2d', '#3a8a3a', '#4aaa4a',
+    '#c8a84b', '#e8c55a', '#5aaa3a',
+    '#228b22', '#90c645', '#6abf4b', '#f0d060'
+]
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShow(false);
-      setTimeout(onComplete, 400);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+function createLeaf(canvas: HTMLCanvasElement, id: number): Leaf {
+    return {
+        id,
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * 100,
+        size: 8 + Math.random() * 16,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.08,
+        fallSpeed: 0.8 + Math.random() * 1.5,
+        swayAmount: 30 + Math.random() * 50,
+        swaySpeed: 0.5 + Math.random() * 1,
+        swayOffset: Math.random() * Math.PI * 2,
+        opacity: 0.7 + Math.random() * 0.3,
+        color: leafColors[Math.floor(Math.random() * leafColors.length)],
+        shape: Math.floor(Math.random() * 3)
+    }
+}
 
-  const skip = () => {
-    setShow(false);
-    setTimeout(onComplete, 200);
-  };
+function drawLeaf(ctx: CanvasRenderingContext2D, leaf: Leaf, time: number) {
+    const swayX = leaf.swayAmount * Math.sin(time * leaf.swaySpeed + leaf.swayOffset)
+    ctx.save()
+    ctx.translate(leaf.x + swayX, leaf.y)
+    ctx.rotate(leaf.rotation + time * leaf.rotationSpeed)
+    ctx.globalAlpha = leaf.opacity
+    ctx.fillStyle = leaf.color
 
-  // SVG tree paths
-  const trunk = 'M150 300 L150 180';
-  const branchLeft = 'M150 200 L100 150';
-  const branchRight = 'M150 200 L200 150';
-  const subBranches = [
-    'M100 150 L75 115',
-    'M100 150 L115 110',
-    'M200 150 L185 110',
-    'M200 150 L225 115',
-    'M150 180 L130 130',
-    'M150 180 L170 130',
-  ];
+    ctx.beginPath()
+    if (leaf.shape === 0) {
+        ctx.ellipse(0, 0, leaf.size * 0.5, leaf.size, 0, 0, Math.PI * 2)
+    } else if (leaf.shape === 1) {
+        ctx.moveTo(0, leaf.size)
+        ctx.bezierCurveTo(-leaf.size * 0.8, leaf.size * 0.3, -leaf.size, -leaf.size * 0.3, 0, -leaf.size * 0.2)
+        ctx.bezierCurveTo(leaf.size, -leaf.size * 0.3, leaf.size * 0.8, leaf.size * 0.3, 0, leaf.size)
+    } else {
+        ctx.moveTo(0, -leaf.size)
+        ctx.quadraticCurveTo(leaf.size * 0.8, 0, leaf.size * 0.4, leaf.size)
+        ctx.quadraticCurveTo(0, leaf.size * 0.7, -leaf.size * 0.4, leaf.size)
+        ctx.quadraticCurveTo(-leaf.size * 0.8, 0, 0, -leaf.size)
+    }
+    ctx.fill()
+    ctx.restore()
+}
 
-  const leaves = [
-    { cx: 75, cy: 110, color: '#2d6a2d' },
-    { cx: 115, cy: 105, color: '#c8a84b' },
-    { cx: 185, cy: 105, color: '#2d6a2d' },
-    { cx: 225, cy: 110, color: '#c8a84b' },
-    { cx: 130, cy: 125, color: '#c8a84b' },
-    { cx: 170, cy: 125, color: '#2d6a2d' },
-    { cx: 100, cy: 145, color: '#2d6a2d' },
-    { cx: 200, cy: 145, color: '#c8a84b' },
-    { cx: 150, cy: 100, color: '#2d6a2d' },
-  ];
+function drawTree(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, time: number) {
+    const cx = canvas.width / 2
+    const baseY = canvas.height
 
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4 }}
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'linear-gradient(to bottom, #0a1f0a, #1a3d1a)' }}
-          onClick={skip}
-        >
-          {/* Skip button */}
-          <button
-            onClick={skip}
-            className="absolute top-6 right-6 font-body text-sm z-50"
-            style={{ color: '#c8a84b' }}
-          >
-            {t('common.skip')}
-          </button>
+    // Trunk
+    ctx.fillStyle = '#4a3020'
+    ctx.beginPath()
+    ctx.moveTo(cx - 18, baseY)
+    ctx.quadraticCurveTo(cx - 15 + Math.sin(time * 0.3) * 2, baseY - 100, cx - 10, baseY - 200)
+    ctx.lineTo(cx + 10, baseY - 200)
+    ctx.quadraticCurveTo(cx + 15 + Math.sin(time * 0.3) * 2, baseY - 100, cx + 18, baseY)
+    ctx.closePath()
+    ctx.fill()
 
-          <svg width="300" height="320" viewBox="0 0 300 320">
-            {/* Trunk */}
-            <motion.path
-              d={trunk}
-              stroke="#2d6a2d"
-              strokeWidth={8}
-              fill="none"
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            />
-            {/* Main branches */}
-            <motion.path
-              d={branchLeft}
-              stroke="#2d6a2d"
-              strokeWidth={5}
-              fill="none"
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.5, delay: 0.6, ease: 'easeOut' }}
-            />
-            <motion.path
-              d={branchRight}
-              stroke="#2d6a2d"
-              strokeWidth={5}
-              fill="none"
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.5, delay: 0.7, ease: 'easeOut' }}
-            />
-            {/* Sub-branches */}
-            {subBranches.map((d, i) => (
-              <motion.path
-                key={i}
-                d={d}
-                stroke="#2d6a2d"
-                strokeWidth={3}
-                fill="none"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.4, delay: 1.2 + i * 0.1, ease: 'easeOut' }}
-              />
-            ))}
-            {/* Leaves */}
-            {leaves.map((leaf, i) => (
-              <motion.ellipse
-                key={i}
-                cx={leaf.cx}
-                cy={leaf.cy}
-                rx={10}
-                ry={7}
-                fill={leaf.color}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.9 }}
-                transition={{
-                  delay: 1.8 + i * 0.05,
-                  duration: 0.4,
-                  type: 'spring',
-                  stiffness: 200,
-                }}
-              />
-            ))}
-          </svg>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
+    // Branches
+    const branches = [
+        { sx: cx - 5, sy: baseY - 170, ex: cx - 130, ey: baseY - 280, w: 7 },
+        { sx: cx - 5, sy: baseY - 220, ex: cx - 170, ey: baseY - 360, w: 5 },
+        { sx: cx - 5, sy: baseY - 260, ex: cx - 110, ey: baseY - 410, w: 4 },
+        { sx: cx + 5, sy: baseY - 170, ex: cx + 130, ey: baseY - 280, w: 7 },
+        { sx: cx + 5, sy: baseY - 220, ex: cx + 170, ey: baseY - 360, w: 5 },
+        { sx: cx + 5, sy: baseY - 260, ex: cx + 110, ey: baseY - 410, w: 4 },
+        { sx: cx, sy: baseY - 280, ex: cx - 50, ey: baseY - 430, w: 3 },
+        { sx: cx, sy: baseY - 280, ex: cx + 50, ey: baseY - 430, w: 3 },
+        { sx: cx, sy: baseY - 290, ex: cx, ey: baseY - 470, w: 3 },
+    ]
 
-export default TreeAnimation;
+    branches.forEach(b => {
+        const sway = Math.sin(time * 0.4) * 4
+        ctx.strokeStyle = '#5a3a25'
+        ctx.lineWidth = b.w
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(b.sx, b.sy)
+        ctx.quadraticCurveTo(
+            (b.sx + b.ex) / 2 + sway, (b.sy + b.ey) / 2,
+            b.ex + sway, b.ey
+        )
+        ctx.stroke()
+    })
+
+    // Foliage
+    const clusters = [
+        { x: cx - 150, y: baseY - 310, r: 75 },
+        { x: cx - 185, y: baseY - 380, r: 65 },
+        { x: cx - 120, y: baseY - 410, r: 60 },
+        { x: cx + 150, y: baseY - 310, r: 75 },
+        { x: cx + 185, y: baseY - 380, r: 65 },
+        { x: cx + 120, y: baseY - 410, r: 60 },
+        { x: cx, y: baseY - 470, r: 80 },
+        { x: cx - 55, y: baseY - 450, r: 65 },
+        { x: cx + 55, y: baseY - 450, r: 65 },
+        { x: cx - 75, y: baseY - 370, r: 70 },
+        { x: cx + 75, y: baseY - 370, r: 70 },
+        { x: cx, y: baseY - 410, r: 60 },
+    ]
+
+    clusters.forEach((c, i) => {
+        const sway = Math.sin(time * 0.4 + i * 0.3) * 5
+        const grad = ctx.createRadialGradient(
+            c.x + sway, c.y, 0,
+            c.x + sway, c.y, c.r
+        )
+        grad.addColorStop(0, '#4aaa4acc')
+        grad.addColorStop(0.5, '#2d6a2daa')
+        grad.addColorStop(1, '#1a4a1a00')
+        ctx.fillStyle = grad
+        ctx.beginPath()
+        ctx.arc(c.x + sway, c.y, c.r, 0, Math.PI * 2)
+        ctx.fill()
+    })
+}
+
+export default function TreeAnimation({ isVisible }: { isVisible: boolean }) {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const animationRef = useRef<number>()
+    const leavesRef = useRef<Leaf[]>([])
+    const timeRef = useRef(0)
+
+    useEffect(() => {
+        if (!isVisible) return
+
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+
+        leavesRef.current = Array.from({ length: 60 }, (_, i) => createLeaf(canvas, i))
+
+        const animate = () => {
+            timeRef.current += 0.016
+            const time = timeRef.current
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            ctx.fillStyle = 'rgba(10,31,10,0.95)'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+            drawTree(ctx, canvas, time)
+
+            leavesRef.current = leavesRef.current.map(leaf => {
+                const updated = {
+                    ...leaf,
+                    y: leaf.y + leaf.fallSpeed,
+                    rotation: leaf.rotation + leaf.rotationSpeed
+                }
+                if (updated.y > canvas.height + 30) {
+                    return createLeaf(canvas, leaf.id)
+                }
+                drawLeaf(ctx, updated, time)
+                return updated
+            })
+
+            animationRef.current = requestAnimationFrame(animate)
+        }
+
+        animate()
+
+        const handleResize = () => {
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+        }
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current)
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [isVisible])
+
+    if (!isVisible) return null
+
+    return (
+        <canvas
+            ref={canvasRef}
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                zIndex: 9999,
+                pointerEvents: 'none'
+            }}
+        />
+    )
+}

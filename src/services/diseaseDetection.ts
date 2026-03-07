@@ -22,38 +22,110 @@ export interface AdvisoryResult {
 }
 
 export async function detectDiseaseFromImage(
-  imageFile: File
-): Promise<DetectionResult> {
+  imageFile: File,
+  language: 'en' | 'hi' | 'te' = 'en'
+): Promise<DiseaseResult> {
 
-  if (!model) {
-    model = await tmImage.load(
-      MODEL_URL + 'model.json',
-      MODEL_URL + 'metadata.json'
-    )
+  const langMap = {
+    en: 'English',
+    hi: 'Hindi',
+    te: 'Telugu'
   }
 
-  const imageURL = URL.createObjectURL(imageFile)
-  const img = new Image()
-  img.src = imageURL
-  await new Promise(resolve => img.onload = resolve)
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(imageFile)
+    reader.onload = () => {
+      const result = reader.result as string
+      resolve(result.split(',')[1])
+    }
+    reader.onerror = reject
+  })
 
-  const predictions = await model.predict(img)
-  URL.revokeObjectURL(imageURL)
+  const prompt = `
+You are an expert plant pathologist and agricultural 
+scientist specializing in Indian farming.
+Carefully analyze this crop leaf image and identify:
+1. The exact crop type
+2. Any disease, pest damage or confirm if healthy
+3. Complete treatment advice for Indian farmers
 
-  const top = predictions.sort(
-    (a, b) => b.probability - a.probability
-  )[0]
+Respond ONLY in ${langMap[language]} language.
+Respond ONLY in valid JSON, no markdown:
+{
+  "diseaseName": "exact disease name or Healthy Plant",
+  "cropName": "identified crop name",
+  "severity": "low or medium or high",
+  "confidence": 85,
+  "description": "what you see and what the disease is",
+  "treatment": "specific medicine names and dosage in India",
+  "fertilizerAdvisory": "fertilizer recommendations",
+  "precautions": ["precaution 1","precaution 2","precaution 3"],
+  "organicAlternatives": "natural treatment options",
+  "additionalTips": "prevention and recovery tips"
+}
+severity must be: low, medium, or high
+confidence must be number 60-98
+`
 
-  const isHealthy = top.className.toLowerCase().includes('healthy')
-  const confidence = Math.round(top.probability * 100)
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [
+            {
+              inline_data: {
+                mime_type: imageFile.type || 'image/jpeg',
+                data: base64
+              }
+            },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024
+        }
+      })
+    }
+  )
 
-  return {
-    diseaseName: top.className,
-    crop: top.className.split(' ')[0],
-    confidence,
-    severity: isHealthy ? 'low' :
-      confidence > 85 ? 'high' : 'medium',
-    isHealthy
+  const data = await response.json()
+  console.log('Vision response:', data)
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error?.message || 'Vision API failed')
+  }
+
+  const text = data.candidates[0].content.parts[0].text
+  let clean = text.replace(/```json|```/g, '').trim()
+  const start = clean.indexOf('{')
+  const end = clean.lastIndexOf('}')
+  if (start !== -1 && end !== -1) {
+    clean = clean.substring(start, end + 1)
+  }
+
+  try {
+    const result = JSON.parse(clean)
+    return {
+      diseaseName: result.diseaseName || 'Unknown',
+      cropName: result.cropName || 'Unknown',
+      severity: result.severity || 'medium',
+      confidence: result.confidence || 75,
+      description: result.description || '',
+      treatment: result.treatment || '',
+      fertilizerAdvisory: result.fertilizerAdvisory || '',
+      precautions: Array.isArray(result.precautions)
+        ? result.precautions : [],
+      organicAlternatives: result.organicAlternatives || '',
+      additionalTips: result.additionalTips || ''
+    }
+  } catch {
+    throw new Error('Could not process image. Try again.')
   }
 }
 
@@ -159,6 +231,7 @@ export interface SymptomInput {
 
 export interface DiseaseResult {
   diseaseName: string
+  cropName?: string
   severity: 'low' | 'medium' | 'high'
   description: string
   treatment: string

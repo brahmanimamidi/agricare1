@@ -132,8 +132,43 @@ confidence must be number 60-98
         organicAlternatives: result.organicAlternatives || '',
         additionalTips: result.additionalTips || ''
       }
-    } catch {
-      throw new Error('Could not process image. Try again.')
+    } catch (parseError) {
+      try {
+        let fixed = clean.replace(/,\s*([\]}])/g, '$1').replace(/[\x00-\x1F\x7F]/g, ' ')
+          .replace(/:\s*"([^"]*)"/g, (match) => match.replace(/\n/g, '\\n').replace(/\r/g, '\\r'))
+        const result = JSON.parse(fixed)
+        return {
+          diseaseName: result.diseaseName || 'Unknown',
+          cropName: result.cropName || 'Unknown',
+          severity: result.severity || 'medium',
+          confidence: result.confidence || 75,
+          description: result.description || '',
+          treatment: result.treatment || '',
+          fertilizerAdvisory: result.fertilizerAdvisory || '',
+          precautions: Array.isArray(result.precautions) ? result.precautions : [],
+          organicAlternatives: result.organicAlternatives || '',
+          additionalTips: result.additionalTips || ''
+        }
+      } catch (e2) {
+        const extField = (f: string) => (clean.match(new RegExp(`"${f}"\\s*:\\s*"([^"]*(?:\\\\.[^"]*)*)"`, 's'))?.[1] || '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        const extArr = (f: string) => (clean.match(new RegExp(`"${f}"\\s*:\\s*\\[([^\\]]*)\\]`, 's'))?.[1]?.match(/"([^"]*)"/g) || []).map(s => s.replace(/^"|"$/g, ''));
+        
+        const diseaseName = extField('diseaseName')
+        if (!diseaseName) throw new Error('Could not process image. Try again.')
+        
+        return {
+          diseaseName,
+          cropName: extField('cropName') || 'Unknown',
+          severity: (extField('severity') as 'low'|'medium'|'high') || 'medium',
+          confidence: parseInt(extField('confidence')) || 75,
+          description: extField('description'),
+          treatment: extField('treatment'),
+          fertilizerAdvisory: extField('fertilizerAdvisory'),
+          precautions: extArr('precautions'),
+          organicAlternatives: extField('organicAlternatives'),
+          additionalTips: extField('additionalTips')
+        }
+      }
     }
   } catch (error: any) {
     console.error('Vision API error:', error);
@@ -206,7 +241,21 @@ Use simple language a farmer can understand.
     try {
       return JSON.parse(clean)
     } catch {
-      throw new Error('Could not parse advisory response.');
+      try {
+        let fixed = clean.replace(/,\s*([\]}])/g, '$1').replace(/[\x00-\x1F\x7F]/g, ' ')
+          .replace(/:\s*"([^"]*)"/g, (match) => match.replace(/\n/g, '\\n').replace(/\r/g, '\\r'))
+        return JSON.parse(fixed)
+      } catch (e2) {
+        const extField = (f: string) => (clean.match(new RegExp(`"${f}"\\s*:\\s*"([^"]*(?:\\\\.[^"]*)*)"`, 's'))?.[1] || '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        const extArr = (f: string) => (clean.match(new RegExp(`"${f}"\\s*:\\s*\\[([^\\]]*)\\]`, 's'))?.[1]?.match(/"([^"]*)"/g) || []).map(s => s.replace(/^"|"$/g, ''));
+        return {
+          treatment: extField('treatment'),
+          fertilizerAdvisory: extField('fertilizerAdvisory'),
+          precautions: extArr('precautions'),
+          organicAlternatives: extField('organicAlternatives'),
+          additionalTips: extField('additionalTips')
+        }
+      }
     }
   } catch (error: any) {
     console.error('Advisory API error:', error);
@@ -403,12 +452,68 @@ confidence must be a number between 60 and 98
         additionalTips: result.additionalTips || ''
       }
     } catch (parseError) {
-      console.error('Parse error:', parseError)
-      console.error('Failed to parse:', clean)
+      console.error('Initial parse error, attempting cleanup:', parseError)
 
-      throw new Error(
-        'Could not process response. Please try again.'
-      )
+      // Second attempt: fix common Gemini JSON issues
+      try {
+        let fixed = clean
+          // Remove trailing commas before } or ]
+          .replace(/,\s*([\]}])/g, '$1')
+          // Remove control characters inside strings
+          .replace(/[\x00-\x1F\x7F]/g, ' ')
+          // Fix unescaped newlines inside string values
+          .replace(/:\s*"([^"]*)"/g, (match) => {
+            return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+          })
+
+        const result = JSON.parse(fixed)
+        return {
+          diseaseName: result.diseaseName || 'Unknown Disease',
+          severity: result.severity || 'medium',
+          confidence: result.confidence || 75,
+          description: result.description || '',
+          treatment: result.treatment || '',
+          fertilizerAdvisory: result.fertilizerAdvisory || '',
+          precautions: Array.isArray(result.precautions)
+            ? result.precautions
+            : [result.precautions || ''],
+          organicAlternatives: result.organicAlternatives || '',
+          additionalTips: result.additionalTips || ''
+        }
+      } catch (secondError) {
+        console.error('Second parse failed, using regex fallback:', secondError)
+
+        // Final fallback: extract fields via regex
+        const extractField = (field: string): string => {
+          const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\.[^"]*)*)"`, 's')
+          const match = clean.match(regex)
+          return match ? match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : ''
+        }
+        const extractArray = (field: string): string[] => {
+          const regex = new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)\\]`, 's')
+          const match = clean.match(regex)
+          if (!match) return []
+          const items = match[1].match(/"([^"]*(?:\\.[^"]*)*)"/g)
+          return items ? items.map(s => s.replace(/^"|"$/g, '')) : []
+        }
+
+        const diseaseName = extractField('diseaseName')
+        if (!diseaseName) {
+          throw new Error('Could not process response. Please try again.')
+        }
+
+        return {
+          diseaseName,
+          severity: (extractField('severity') as 'low' | 'medium' | 'high') || 'medium',
+          confidence: parseInt(extractField('confidence')) || 75,
+          description: extractField('description'),
+          treatment: extractField('treatment'),
+          fertilizerAdvisory: extractField('fertilizerAdvisory'),
+          precautions: extractArray('precautions'),
+          organicAlternatives: extractField('organicAlternatives'),
+          additionalTips: extractField('additionalTips')
+        }
+      }
     }
   } catch (error: any) {
     console.error('Detection API error:', error);

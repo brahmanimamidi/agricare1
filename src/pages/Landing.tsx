@@ -119,6 +119,25 @@ const Landing = () => {
         <LanguageSwitcher />
       </div>
 
+      {/* 93% Accuracy badge */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.0, duration: 1.0 }}
+        className="fixed bottom-5 right-5 font-body"
+        style={{ zIndex: 10 }}
+      >
+        <span style={{
+          fontSize: '0.72rem',
+          letterSpacing: '0.12em',
+          color: 'rgba(200,168,75,0.55)',
+          textTransform: 'uppercase',
+          userSelect: 'none',
+        }}>
+          ✦ 93% Accuracy
+        </span>
+      </motion.div>
+
       {/* Hero Content */}
       <section className="relative flex flex-col items-center justify-center min-h-screen px-4" style={{ zIndex: 4 }}>
         {/* AgriCare title with staggered letter animation */}

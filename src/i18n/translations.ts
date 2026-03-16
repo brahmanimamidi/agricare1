@@ -3,7 +3,7 @@ import { Language } from '@/types';
 const translations: Record<Language, Record<string, string>> = {
   en: {
     // Landing
-    'landing.subtitle': 'Smart Farming, Better Future',
+    'landing.subtitle': 'Design and Implementation of an Integrated Web-Based Agricultural Advisory System',
     'landing.getAdvice': 'Get Advice →',
     'landing.hideAdvice': 'Hide ↑',
     'landing.cropAdvisory': 'Crop Advisory',
@@ -135,7 +135,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bot.q5': 'Best season for tomatoes?',
   },
   hi: {
-    'landing.subtitle': 'स्मार्ट खेती, बेहतर भविष्य',
+    'landing.subtitle': 'Design and Implementation of an Integrated Web-Based Agricultural Advisory System',
     'landing.getAdvice': 'सलाह लें →',
     'landing.hideAdvice': 'छिपाएं ↑',
     'landing.cropAdvisory': 'फसल सलाह',
@@ -257,7 +257,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bot.q5': 'टमाटर के लिए मौसम?',
   },
   te: {
-    'landing.subtitle': 'స్మార్ట్ వ్యవసాయం, మెరుగైన భవిష్యత్తు',
+    'landing.subtitle': 'Design and Implementation of an Integrated Web-Based Agricultural Advisory System',
     'landing.getAdvice': 'సలహా పొందండి →',
     'landing.hideAdvice': 'దాచు ↑',
     'landing.cropAdvisory': 'పంట సలహా',

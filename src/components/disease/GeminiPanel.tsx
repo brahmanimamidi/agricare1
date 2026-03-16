@@ -83,9 +83,6 @@ const GeminiPanel = ({ result, crop }: GeminiPanelProps) => {
           whileTap={{ scale: 0.98 }}
         >
           <span className="relative z-10">✨ Get Full Treatment Plan</span>
-          <span className="block text-xs font-normal relative z-10" style={{ color: 'rgba(10,31,10,0.6)' }}>
-            Powered by Gemini AI
-          </span>
           {/* Shimmer */}
           <motion.div
             className="absolute inset-0"
